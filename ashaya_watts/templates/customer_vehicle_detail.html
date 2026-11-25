@@ -1,5 +1,7 @@
+
 {% extends "base_public.html" %}
 {% block title %}{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }} | Karmanjahni{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="/ashaya/static/storefront.css">
 {% endblock %}
@@ -7,6 +9,53 @@
 {% block content %}
 <section class="kj-card">
   <h1>{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h1>
-  <!-- TODO (Ashaya): Show specs, estimated arrival timeline, and Tyrone's F-05 estimated JMD price -->
+
+  <!-- Display vehicle photos -->
+  {% if vehicle.photo_urls %}
+    {% for photo in vehicle.photo_urls %}
+      <img src="{{ photo }}"
+           alt="{{ vehicle.make }} {{ vehicle.model }}"
+           width="300">
+    {% endfor %}
+  {% endif %}
+
+  <!-- Display vehicle specifications -->
+  <h2>Vehicle Specifications</h2>
+
+  <p><strong>Make:</strong> {{ vehicle.make }}</p>
+  <p><strong>Model:</strong> {{ vehicle.model }}</p>
+  <p><strong>Year:</strong> {{ vehicle.year }}</p>
+  <p><strong>Category:</strong> {{ vehicle.category }}</p>
+  <p><strong>Color:</strong> {{ vehicle.color }}</p>
+  <p><strong>Mileage:</strong> {{ vehicle.mileage_km }} km</p>
+  <p><strong>Engine Size:</strong> {{ vehicle.engine_cc }} cc</p>
+
+  {% if vehicle.features %}
+    <p><strong>Features:</strong> {{ vehicle.features }}</p>
+  {% endif %}
+
+  <!-- Display vehicle availability -->
+  <h2>Availability</h2>
+
+  <p><strong>Status:</strong> {{ vehicle.availability }}</p>
+
+  <!-- Display estimated arrival for upcoming vehicles -->
+  {% if vehicle.availability == "Upcoming Arrival" %}
+    {% if vehicle.estimated_arrival %}
+      <p><strong>Estimated Arrival:</strong>
+        {{ vehicle.estimated_arrival }}
+      </p>
+    {% else %}
+      <p>Estimated arrival date is not yet available.</p>
+    {% endif %}
+  {% endif %}
+
+  <!-- F-05 estimated JMD price integration pending -->
+
+  <a class="kj-btn kj-btn-gold"
+     href="{{ url_for('ashaya_bp.customer_home') }}">
+    Back to Inventory
+  </a>
+
 </section>
 {% endblock %}
