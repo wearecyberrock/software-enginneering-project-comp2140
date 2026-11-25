@@ -1,5 +1,7 @@
+
 {% extends "base_public.html" %}
 {% block title %}Browse Vehicles | Karmanjahni Company Limited{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="/ashaya/static/storefront.css">
 {% endblock %}
@@ -7,12 +9,75 @@
 {% block content %}
 <section class="kj-card">
   <h1>Find Your Next Vehicle</h1>
+
   <p>Search available and upcoming imports from Japan, the US, Singapore, Thailand, and Europe.</p>
-  <form method="get" action="/browse">
-    <input class="kj-input" type="search" name="q" value="{{ query }}" placeholder="Search by make or model (e.g. Tacoma Pickup, Honda Fit)...">
-    <button class="kj-btn kj-btn-gold" type="submit" style="margin-top: 0.75rem;">Search Inventory</button>
+
+  <!-- Search for vehicles by make or model -->
+  <form method="get" action="{{ url_for('ashaya_bp.customer_home') }}">
+    <input class="kj-input" type="search" name="q"
+           value="{{ query }}"
+           placeholder="Search by make or model (e.g. Tacoma Pickup, Honda Fit)..."
+           aria-label="Search by make or model">
+
+    <button class="kj-btn kj-btn-gold" type="submit"
+            style="margin-top: 0.75rem;">
+      Search Inventory
+    </button>
   </form>
-  <!-- TODO (Ashaya): Render public vehicle cards (estimated timelines & dynamic JMD price ONLY) -->
+
+  <h2>Vehicle Inventory</h2>
+
+  <!-- Display matching vehicles -->
+  {% if vehicles %}
+    {% for vehicle in vehicles %}
+      <div class="kj-card">
+
+        {% if vehicle.photo_urls %}
+          <img src="{{ vehicle.photo_urls[0] }}"
+               alt="{{ vehicle.make }} {{ vehicle.model }}"
+               width="250">
+        {% endif %}
+
+        <h3>{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h3>
+
+        <p><strong>Color:</strong> {{ vehicle.color }}</p>
+        <p><strong>Mileage:</strong> {{ vehicle.mileage_km }} km</p>
+        <p><strong>Status:</strong> {{ vehicle.availability }}</p>
+
+        <!-- Display estimated arrival for upcoming vehicles -->
+        {% if vehicle.availability == "Upcoming Arrival" %}
+          {% if vehicle.estimated_arrival %}
+            <p><strong>Estimated Arrival:</strong>
+              {{ vehicle.estimated_arrival }}
+            </p>
+          {% else %}
+            <p>Estimated arrival date is not yet available.</p>
+          {% endif %}
+        {% endif %}
+
+        <!-- F-05 estimated JMD price integration pending -->
+
+        <a class="kj-btn kj-btn-gold"
+           href="{{ url_for('ashaya_bp.customer_vehicle_detail', vehicle_id=vehicle.id) }}">
+          View Details
+        </a>
+
+      </div>
+    {% endfor %}
+
+  {% else %}
+
+    <!-- Handle searches with no matching vehicles -->
+    {% if message %}
+      <p>{{ message }}</p>
+    {% elif query.strip() %}
+      <p>No matching vehicles found</p>
+    {% else %}
+      <p>No vehicles are currently available in the inventory.</p>
+    {% endif %}
+
+  {% endif %}
+
 </section>
 {% endblock %}
 
