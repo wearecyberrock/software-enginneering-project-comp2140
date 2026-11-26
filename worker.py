@@ -72,6 +72,17 @@ def _ensure_demo_seeded():
     _seeded = True
 
 
+from werkzeug.exceptions import HTTPException  # noqa: E402
+import traceback  # noqa: E402
+
+
+@app.errorhandler(Exception)
+def _show_error(err):
+    if isinstance(err, HTTPException):
+        return err
+    return f"<pre>{traceback.format_exc()}</pre>", 500
+
+
 # Expose the Flask WSGI app as the Cloudflare Worker Default entrypoint
 try:
     from workers import wsgi
