@@ -16,6 +16,7 @@ from sqlalchemy.pool import StaticPool
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 os.environ.setdefault("UPLOAD_FOLDER", "/tmp/uploads")
 
+from werkzeug.exceptions import HTTPException  # noqa: E402
 from werkzeug.security import generate_password_hash  # noqa: E402
 
 from app import create_app  # noqa: E402
@@ -42,28 +43,28 @@ _seeded = False
 
 @app.before_request
 def _ensure_demo_seeded():
-    """Ensure tables, duty schedule, and demo records exist on the first request.
-
-    Runs lazily on the first HTTP request (not at top-level import) so Cloudflare's
-    deploy-time memory snapshot never hits entropy/PRNG restrictions.
-    """
+    """Ensure tables, duty schedule, and demo records exist on the first request."""
     global _seeded
     if _seeded:
         return
-    try:
-        initialize_inventory()
-        created_accounts = seed_demo()
-        demo_password = os.environ.get("DEMO_PASSWORD", "Karmanjahni2026!")
-        if created_accounts:
-            for username, _ in created_accounts:
-                user = User.query.filter_by(username=username).first()
-                if user is not None:
-                    user.password_hash = generate_password_hash(demo_password)
-            db.session.commit()
-        _seeded = True
-    except Exception:
-        print(traceback.format_exc())
-        raise
+    initialize_inventory()
+    created_accounts = seed_demo()
+    demo_password = os.environ.get("DEMO_PASSWORD", "Karmanjahni2026!")
+    if created_accounts:
+        for username, _ in created_accounts:
+            user = User.query.filter_by(username=username).first()
+            if user is not None:
+                user.password_hash = generate_password_hash(demo_password)
+        db.session.commit()
+    _seeded = True
+
+
+@app.errorhandler(Exception)
+def _handle_unexpected_error(err):
+    """Show exact Python traceback on unexpected 500s during Cloudflare setup."""
+    if isinstance(err, HTTPException):
+        return err
+    return f"<pre>{traceback.format_exc()}</pre>", 500
 
 
 # Expose the Flask WSGI app as the Cloudflare Worker Default entrypoint
@@ -72,5 +73,4 @@ try:
 
     Default = wsgi.entrypoint(app)
 except ModuleNotFoundError:
-    # Allows importing worker.py locally outside Cloudflare's Pyodide runtime for testing
     Default = None
