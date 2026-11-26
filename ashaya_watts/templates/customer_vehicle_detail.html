@@ -49,7 +49,7 @@
     {% endif %}
   {% endif %}
 
-  <!-- F-05 estimated JMD price integration pending -->
+  <p>Estimated price: {{ "J$%s"|format(vehicle.estimated_jmd_price) if vehicle.estimated_jmd_price else "Unavailable" }}</p>
 
   <a class="kj-btn kj-btn-gold"
      href="{{ url_for('ashaya_bp.customer_home') }}">

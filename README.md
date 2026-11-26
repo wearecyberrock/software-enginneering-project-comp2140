@@ -39,30 +39,43 @@
 
 ---
 
-## Quick Start (Local Development)
+## Run the integrated project on Windows
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/wearecyberrock/software-enginneering-project-comp2140.git
-cd software-enginneering-project-comp2140
+Extract the whole folder and open the directory containing `app.py` in VS Code.
+From PowerShell, with Python 3.11 or 3.12 installed, run:
 
-# 2. Create and activate a virtual environment
+```powershell
 python -m venv venv
-# Windows (PowerShell):
-.\venv\Scripts\Activate.ps1
-# macOS / Linux:
-source venv/bin/activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Run the starter app
-python app.py
+.\venv\Scripts\python.exe -m pip install -r requirements.txt
+.\venv\Scripts\python.exe -m flask --app app seed-demo
+.\venv\Scripts\python.exe -m flask --app app run
 ```
 
-Open `http://127.0.0.1:5000` in your browser.
+Open http://127.0.0.1:5000/ for the public storefront. Choose **Staff Login**
+and use the username and password printed by the setup command. Save the
+passwords when they appear. Repeating setup preserves existing accounts,
+rates, units and shipment updates. Demo rates are illustrative.
 
----
+| Account | Pages to demonstrate |
+| --- | --- |
+| demo_owner | All staff pages and pricing settings |
+| demo_purchasing_manager | Vehicle entry, tracking, shipment updates and rates |
+| demo_internal_staff | Tracking and shipment updates |
+| demo_sales_staff | Tablet inventory, photos, mileage and JMD price |
+
+Start with BOL-000 (In Transit) and BOL-001 (Delayed). Log the Hilux as
+BOL-205 with two photos. Update its status and ETA in shipment management,
+view the photos and price as a salesperson, and search for Hilux signed out.
+For the test-plan pricing example, use BOL-000 on a fresh demo database.
+The Honda Fit starts at J$1,800,000.00; change USD from 150 to 160 to see
+J$1,920,000.00 on the tablet and the corresponding estimate in the storefront.
+The local database persists between runs. Stop the server with Ctrl+C.
+
+To run all tests, including the cross-member workflow:
+
+```powershell
+.\venv\Scripts\python.exe -m pytest -q
+```
 
 ## Running Tests
 

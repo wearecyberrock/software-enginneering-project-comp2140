@@ -77,6 +77,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 card.appendChild(color);
                 card.appendChild(mileage);
                 card.appendChild(status);
+                const price = document.createElement("p");
+                price.textContent = vehicle.estimated_jmd_price
+                    ? `Estimated price: J$${vehicle.estimated_jmd_price}`
+                    : "Estimated price: Unavailable";
+                card.appendChild(price);
 
                 // Display the ETA for upcoming vehicles.
                 if (vehicle.availability === "Upcoming Arrival") {

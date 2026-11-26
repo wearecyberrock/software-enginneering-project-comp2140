@@ -19,6 +19,7 @@ import os
 from flask import Flask, redirect, send_from_directory
 
 from randre_fearon import randre_bp
+from shakir_russell import shakir_bp
 from shared.config import Config
 from shared.database import db
 from shared.models import Vehicle
@@ -63,6 +64,7 @@ def create_local_app(config_object=Config, load_samples=True):
         return redirect("/tracking/")
 
     app.register_blueprint(randre_bp)
+    app.register_blueprint(shakir_bp)
     return app
 
 

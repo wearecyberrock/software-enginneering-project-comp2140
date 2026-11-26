@@ -8,6 +8,7 @@ Registers all 5 team member Blueprints and serves shared design resources.
 import os
 from flask import Flask, send_from_directory
 from shared.config import Config
+from shared.demo_data import seed_demo_command
 from shared.database import db
 
 # Import each team member's isolated Blueprint
@@ -26,6 +27,7 @@ def create_app(config_object=Config):
         template_folder=os.path.join(base_dir, "shared", "templates"),
     )
     app.config.from_object(config_object)
+    app.cli.add_command(seed_demo_command)
 
     # Initialize shared database
     db.init_app(app)

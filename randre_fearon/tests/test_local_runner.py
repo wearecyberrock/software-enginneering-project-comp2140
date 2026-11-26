@@ -10,6 +10,8 @@ from shared.database import db
 def test_local_runner_loads_sample_data_and_serves_both_pages():
     app = create_local_app(TestConfig, load_samples=True)
     client = app.test_client()
+    with client.session_transaction() as staff:
+        staff.update(user_id=1, user_role="purchasing_manager")
     try:
         # The database lives in <repo>/instance/ (like app.py), never inside randre_fearon/.
         assert app.instance_path == os.path.join(ROOT, "instance")

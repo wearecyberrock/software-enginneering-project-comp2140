@@ -280,12 +280,18 @@ def delete_shipment_by_bol(bol):
     )
 
 
+def staff_home():
+    if session.get("user_role") == "sales_staff":
+        return redirect("/tablet/")
+    return redirect(url_for("shakir_bp.manage_shipments"))
+
+
 @shakir_bp.route("/staff/login", methods=["GET", "POST"])
 def staff_login():
     """Staff login entry point for Role-Based Access Control (SRS §3.2)."""
     # If the staff member is already logged in, send them straight to the shipment page
     if "user_id" in session:
-        return redirect(url_for("shakir_bp.manage_shipments"))
+        return staff_home()
 
     # Variable `error_message`: shown if username or password is wrong
     error_message = None
@@ -311,7 +317,7 @@ def staff_login():
             session["username"] = user.username
             session["user_role"] = user.role
             # Redirect the signed-in staff member to the F-06 shipment management page
-            return redirect(url_for("shakir_bp.manage_shipments"))
+            return staff_home()
 
         # Login failed — prepare an error message and return HTTP 401 Unauthorized
         error_message = "Invalid username or password. Please try again."

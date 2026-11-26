@@ -1,4 +1,3 @@
-```html
 {% extends "base_public.html" %}
 {% block title %}Browse Vehicles | Karmanjahni Company Limited{% endblock %}
 
@@ -28,6 +27,7 @@
   <h2>Vehicle Inventory</h2>
 
   <!-- Display matching vehicles -->
+  <div id="vehicle-results">
   {% if vehicles %}
     {% for vehicle in vehicles %}
       <div class="kj-card">
@@ -52,7 +52,7 @@
           {% endif %}
         {% endif %}
 
-        <!-- F-05 estimated JMD price integration pending -->
+        <p>Estimated price: {{ "J$%s"|format(vehicle.estimated_jmd_price) if vehicle.estimated_jmd_price else "Unavailable" }}</p>
         <a class="kj-btn kj-btn-gold"
            href="{{ url_for('ashaya_bp.customer_vehicle_detail', vehicle_id=vehicle.id) }}">
           View Details
@@ -69,8 +69,10 @@
       <p>No vehicles are currently available in the inventory.</p>
     {% endif %}
   {% endif %}
+</div>
 </section>
 {% endblock %}
-```
 
 
+
+{% block extra_js %}<script src="{{ url_for('ashaya_bp.static', filename='search.js') }}"></script>{% endblock %}

@@ -42,4 +42,7 @@ def flask_app(tmp_path):
 
 @pytest.fixture()
 def client(flask_app):
-    return flask_app.test_client()
+    client = flask_app.test_client()
+    with client.session_transaction() as staff:
+        staff.update(user_id=1, user_role="purchasing_manager")
+    return client

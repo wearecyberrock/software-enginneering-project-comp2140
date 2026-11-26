@@ -3,6 +3,8 @@
 from datetime import date
 
 from flask import current_app
+from shared.photos import parse_photo_urls
+from tyrone_palmer.pricing_engine import calculate_estimated_jmd_price
 
 from shared.database import db
 from shared.models import Shipment, Vehicle
@@ -59,6 +61,16 @@ def load_demo_inventory():
 
 def serialize_public_vehicle(vehicle: Vehicle) -> dict:
     """Return only customer-safe vehicle information."""
+    shipment = vehicle.shipment
+    if shipment and shipment.is_deleted:
+        shipment = None
+    availability = "Availability pending"
+    if shipment:
+        availability = "Available Now" if shipment.status in ("Arrived", "Cleared") else "Upcoming Arrival"
+    try:
+        price = str(calculate_estimated_jmd_price(vehicle))
+    except ValueError:
+        price = None
     return {
         "id": vehicle.id,
         "make": vehicle.make,
@@ -69,17 +81,10 @@ def serialize_public_vehicle(vehicle: Vehicle) -> dict:
         "mileage_km": vehicle.mileage_km,
         "engine_cc": vehicle.engine_cc,
         "features": vehicle.features,
-        "photo_urls": vehicle.photo_urls,
-        "availability": (
-            "Available Now"
-            if vehicle.shipment and vehicle.shipment.status == "Arrived"
-            else "Upcoming Arrival"
-        ),
-        "estimated_arrival": (
-            vehicle.shipment.eta_date.isoformat()
-            if vehicle.shipment and vehicle.shipment.eta_date
-            else None
-        ),
+        "photo_urls": parse_photo_urls(vehicle.photo_urls),
+        "estimated_jmd_price": price,
+        "availability": availability,
+        "estimated_arrival": shipment.eta_date.isoformat() if shipment and shipment.eta_date else None,
     }
 
 

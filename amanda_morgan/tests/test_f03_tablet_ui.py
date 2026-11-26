@@ -190,7 +190,10 @@ def app_and_ids():
 
         ids = {"corolla": corolla.id, "isuzu": isuzu.id, "deleted": deleted.id, "unpaid": unpaid.id}
 
-    yield application, ids
+    client = application.test_client()
+    with client.session_transaction() as staff:
+        staff.update(user_id=1, user_role="sales_staff")
+    yield client, ids
 
     with application.app_context():
         db.session.remove()
@@ -199,8 +202,8 @@ def app_and_ids():
 
 def test_ts1_tablet_responsive_markup(app_and_ids):
     """TS-1 [AC-1]: the tablet page is responsive, touch-oriented markup (viewport + tablet CSS + grid)."""
-    app, ids = app_and_ids
-    html = app.test_client().get("/tablet/").get_data(as_text=True)
+    client, ids = app_and_ids
+    html = client.get("/tablet/").get_data(as_text=True)
     assert 'name="viewport"' in html
     assert "/amanda/static/tablet.css" in html
     assert 'class="tablet-grid"' in html
@@ -210,8 +213,8 @@ def test_ts1_tablet_responsive_markup(app_and_ids):
 
 def test_ts2_vehicle_profile_displays_mileage_and_photos(app_and_ids):
     """TS-2 [AC-2]: opening a vehicle profile shows mileage, specs and the photo gallery."""
-    app, ids = app_and_ids
-    response = app.test_client().get(f"/tablet/vehicle/{ids['corolla']}")
+    client, ids = app_and_ids
+    response = client.get(f"/tablet/vehicle/{ids['corolla']}")
     html = response.get_data(as_text=True)
     assert response.status_code == 200
     assert "45,000 km" in html
@@ -225,8 +228,8 @@ def test_ts2_vehicle_profile_displays_mileage_and_photos(app_and_ids):
 
 
 def test_vehicle_without_photos_still_shows_specs(app_and_ids):
-    app, ids = app_and_ids
-    response = app.test_client().get(f"/tablet/vehicle/{ids['isuzu']}")
+    client, ids = app_and_ids
+    response = client.get(f"/tablet/vehicle/{ids['isuzu']}")
     html = response.get_data(as_text=True)
     assert response.status_code == 200
     assert "No photos available" in html
@@ -234,13 +237,12 @@ def test_vehicle_without_photos_still_shows_specs(app_and_ids):
 
 
 def test_unknown_vehicle_returns_404(app_and_ids):
-    app, _ = app_and_ids
-    assert app.test_client().get("/tablet/vehicle/99999").status_code == 404
+    client, _ = app_and_ids
+    assert client.get("/tablet/vehicle/99999").status_code == 404
 
 
 def test_soft_deleted_and_unpaid_vehicles_are_hidden(app_and_ids):
-    app, ids = app_and_ids
-    client = app.test_client()
+    client, ids = app_and_ids
     listing = client.get("/tablet/").get_data(as_text=True)
     assert "Corolla" in listing and "Isuzu" in listing
     assert "Civic" not in listing  # soft-deleted (SRS 3.2)
@@ -250,8 +252,7 @@ def test_soft_deleted_and_unpaid_vehicles_are_hidden(app_and_ids):
 
 
 def test_search_filters_the_grid(app_and_ids):
-    app, _ = app_and_ids
-    client = app.test_client()
+    client, _ = app_and_ids
     html = client.get("/tablet/?q=corolla").get_data(as_text=True)
     assert "Corolla" in html and "Isuzu" not in html
     html = client.get("/tablet/?q=toyota 2018").get_data(as_text=True)
@@ -261,8 +262,7 @@ def test_search_filters_the_grid(app_and_ids):
 
 
 def test_search_input_is_sanitized(app_and_ids):
-    app, _ = app_and_ids
-    client = app.test_client()
+    client, _ = app_and_ids
     response = client.get("/tablet/", query_string={"q": "'; DROP TABLE vehicles; --"})
     assert response.status_code == 200
     assert "Corolla" in client.get("/tablet/").get_data(as_text=True)  # table still intact

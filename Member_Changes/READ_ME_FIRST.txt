@@ -1,1 +1,0 @@
-Base: GitHub main bdeb77e. Each named folder contains only that member's changed files. Copy its contents into the matching existing member folder. Apply the contents of Group_Integration at the repository root, preserving subfolders. All six sets belong together. Follow the updated root README to run the project. Do not replace a whole existing folder with a changes-only folder.
