@@ -1,17 +1,204 @@
 {% extends "base_staff.html" %}
-{% block title %}Manage FX &amp; Duty Rates (F-05) | Karmanjahni{% endblock %}
+
+{% block title %}
+Manage FX &amp; Duty Rates (F-05) | Karmanjahni
+{% endblock %}
+
 {% block extra_css %}
-<link rel="stylesheet" href="/tyrone/static/pricing.css">
+<link rel="stylesheet"
+      href="{{ url_for('tyrone_bp.static', filename='pricing.css') }}">
 {% endblock %}
 
 {% block content %}
-<section class="kj-card">
-  <h1>Dynamic Pricing Variables (F-05)</h1>
-  <p>Owner: <strong>Tyrone Palmer</strong> — Update exchange rates &amp; CC duty tiers without modifying code.</p>
-  <!-- TODO (Tyrone): Build editable tables for fx_rates and duty_tiers -->
+
+<section class="kj-card pricing-manager">
+
+    <h1>Dynamic Pricing Variables (F-05)</h1>
+
+    <p>
+        Manage foreign exchange rates and vehicle duty percentages
+        without modifying the source code.
+    </p>
+
+    {% if error %}
+        <div class="pricing-alert pricing-error" role="alert">
+            {{ error }}
+        </div>
+    {% endif %}
+
+    {% if success %}
+        <div class="pricing-alert pricing-success" role="status">
+            {{ success }}
+        </div>
+    {% endif %}
+
+    <h2>Foreign Exchange Rates</h2>
+
+    <p>Jamaican dollars per unit of foreign currency.</p>
+
+    <div class="pricing-table-wrapper">
+        <table class="pricing-table">
+            <thead>
+                <tr>
+                    <th>Currency</th>
+                    <th>Current Rate (JMD)</th>
+                    <th>Update Rate</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for rate in fx_rates %}
+                <tr>
+                    <td>{{ rate.currency_code }}</td>
+
+                    <td>
+                        {{ "%.4f"|format(rate.rate_to_jmd) }}
+                    </td>
+
+                    <td>
+                        <form method="POST"
+                              action="{{ url_for('tyrone_bp.manage_rates') }}"
+                              class="pricing-form">
+
+                            <input type="hidden"
+                                   name="csrf_token"
+                                   value="{{ csrf_token }}">
+
+                            <input type="hidden"
+                                   name="action"
+                                   value="update_fx">
+
+                            <input type="hidden"
+                                   name="currency_code"
+                                   value="{{ rate.currency_code }}">
+
+                            <input type="number"
+                                   name="rate_to_jmd"
+                                   aria-label="New {{ rate.currency_code }} exchange rate"
+                                   value="{{ rate.rate_to_jmd }}"
+                                   min="0.0001"
+                                   max="99999999.9999"
+                                   step="0.0001"
+                                   required>
+
+                            <button type="submit"
+                                    class="pricing-button">
+                                Update
+                            </button>
+
+                        </form>
+                    </td>
+                </tr>
+
+                {% else %}
+                <tr>
+                    <td colspan="3">
+                        No exchange rates configured.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h2>Vehicle Duty Percentages</h2>
+
+    <p>
+        Duty percentages are applied according to vehicle
+        category and engine capacity.
+    </p>
+
+    <div class="pricing-table-wrapper">
+        <table class="pricing-table">
+            <thead>
+                <tr>
+                    <th>Duty Tier</th>
+                    <th>Category</th>
+                    <th>Minimum CC</th>
+                    <th>Maximum CC</th>
+                    <th>Current Duty</th>
+                    <th>Update Duty</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for tier in duty_tiers %}
+                <tr>
+                    <td>{{ tier.label }}</td>
+
+                    <td>
+                        {{ tier.vehicle_category
+                           |replace('_', ' ')|title }}
+                    </td>
+
+                    <td>{{ tier.min_cc }}</td>
+
+                    <td>
+                        {% if tier.max_cc is none %}
+                            Unlimited
+                        {% else %}
+                            {{ tier.max_cc }}
+                        {% endif %}
+                    </td>
+
+                    <td>{{ tier.duty_percentage }}%</td>
+
+                    <td>
+                        <form method="POST"
+                              action="{{ url_for('tyrone_bp.manage_rates') }}"
+                              class="pricing-form">
+
+                            <input type="hidden"
+                                   name="csrf_token"
+                                   value="{{ csrf_token }}">
+
+                            <input type="hidden"
+                                   name="action"
+                                   value="update_duty">
+
+                            <input type="hidden"
+                                   name="tier_id"
+                                   value="{{ tier.id }}">
+
+                            <input type="number"
+                                   name="duty_percentage"
+                                   aria-label="New duty percentage for {{ tier.label }}"
+                                   value="{{ tier.duty_percentage }}"
+                                   min="0"
+                                   max="9999.99"
+                                   step="0.01"
+                                   required>
+
+                            <button type="submit"
+                                    class="pricing-button">
+                                Update
+                            </button>
+
+                        </form>
+                    </td>
+                </tr>
+
+                {% else %}
+                <tr>
+                    <td colspan="6">
+                        No duty tiers configured.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pricing-note">
+        Changes to exchange rates and duty percentages
+        will be reflected in subsequent vehicle price estimates.
+    </div>
+
 </section>
+
 {% endblock %}
 
 {% block extra_js %}
-<script src="/tyrone/static/pricing_calc.js"></script>
+<script src="{{ url_for('tyrone_bp.static', filename='pricing_calc.js') }}"
+        defer></script>
 {% endblock %}
