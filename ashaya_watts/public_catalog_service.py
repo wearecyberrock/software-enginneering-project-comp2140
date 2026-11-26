@@ -1,191 +1,122 @@
-
-"""Unit & Acceptance Tests for F-04 Customer Interface Search (Ashaya Watts)."""
+"""F-04 Service: Public Inventory Filtering with Strict View Restriction (SR-3)."""
 
 from datetime import date
-import pytest
-from app import create_app
-from shared.config import TestConfig
+
+from flask import current_app
+
 from shared.database import db
-from shared.models import Vehicle, Shipment
+from shared.models import Shipment, Vehicle
+from shared.validators import sanitize_search_query
 
 
-# Create sample inventory for testing.
-@pytest.fixture
-def client():
-    app = create_app(TestConfig)
+def load_demo_inventory():
+    """Add sample vehicles to the local F-04 demonstration database."""
+    if current_app.config.get("SQLALCHEMY_DATABASE_URI") != "sqlite:///f04_demo.db":
+        return
 
-    with app.app_context():
-
-        records = [
-            ("Toyota", "Corolla", "Arrived", None, 10000),
-            ("Toyota", "Corolla", "In Transit", date(2026, 12, 1), 12500),
-            ("Toyota", "Camry", "Arrived", None, 14000),
-            ("Honda", "Civic", "Arrived", None, 11000),
-            ("Honda", "Accord", "Arrived", None, 13000)
-        ]
-
-        for index, (make, model, status, eta, cost) in enumerate(records, 1):
-
-            vehicle = Vehicle(
-                make=make,
-                model=model,
-                year=2020,
-                color="White",
-                mileage_km=40000,
-                engine_cc=1500,
-                base_foreign_price=cost,
-                deposit_paid=True
-            )
-
-            vehicle.shipment = Shipment(
-                bill_of_lading=f"F04-TEST-{index}",
-                status=status,
-                eta_date=eta
-            )
-
-            db.session.add(vehicle)
-
-        db.session.commit()
-
-        yield app.test_client()
-
-
-# TC-04.01 - TS-1 [AC-1]: Positive test
-def test_ts1_search_filters_by_model(client):
-
-    response = client.get("/api/public/vehicles?q=Corolla")
-
-    assert response.status_code == 200
-
-    vehicles = response.get_json()
-
-    assert len(vehicles) == 2
-
-    # Check that only matching models are returned.
-    for vehicle in vehicles:
-        assert vehicle["model"].lower() == "corolla"
-
-    # Check that available and upcoming vehicles are returned.
-    statuses = [vehicle["availability"] for vehicle in vehicles]
-
-    assert "Available Now" in statuses
-    assert "Upcoming Arrival" in statuses
-
-
-# TC-04.02 - TS-1 [AC-1]: Positive test
-def test_ts1_search_filters_by_make_and_model(client):
-
-    # Search by make.
-    response = client.get("/api/public/vehicles?q=Honda")
-
-    assert response.status_code == 200
-
-    vehicles = response.get_json()
-
-    assert len(vehicles) == 2
-
-    for vehicle in vehicles:
-        assert vehicle["make"].lower() == "honda"
-
-    models = [vehicle["model"] for vehicle in vehicles]
-
-    assert "Civic" in models
-    assert "Accord" in models
-
-    # Search by make and model.
-    response = client.get("/api/public/vehicles?q=Honda+Civic")
-
-    assert response.status_code == 200
-
-    vehicles = response.get_json()
-
-    assert len(vehicles) == 1
-    assert vehicles[0]["make"].lower() == "honda"
-    assert vehicles[0]["model"].lower() == "civic"
-
-
-# TC-04.03 - TS-2 [AC-1]: Negative test
-def test_ts2_nonexistent_vehicle_search(client):
-
-    response = client.get("/api/public/vehicles?q=XYZ123")
-
-    assert response.status_code == 200
-    assert response.get_json() == []
-
-    # Check that the customer page displays the correct message.
-    response = client.get("/browse?q=XYZ123")
-
-    assert response.status_code == 200
-    assert b"No matching vehicles found" in response.data
-
-
-# TC-04.04 - TS-3 [AC-2]: Positive test
-def test_ts3_internal_financial_data_not_exposed(client):
-
-    response = client.get("/api/public/vehicles?q=Corolla")
-
-    assert response.status_code == 200
-
-    vehicles = response.get_json()
-
-    assert len(vehicles) == 2
-
-    upcoming_found = False
-
-    for vehicle in vehicles:
-
-        # Check that the upcoming vehicle has the correct ETA.
-        if vehicle["availability"] == "Upcoming Arrival":
-            upcoming_found = True
-
-            assert vehicle["estimated_arrival"] == "2026-12-01"
-
-            detail = client.get(f"/vehicle/{vehicle['id']}")
-
-            assert detail.status_code == 200
-            assert b"2026-12-01" in detail.data
-
-        # Check that internal information is excluded.
-        assert "base_foreign_price" not in vehicle
-        assert "base_currency" not in vehicle
-        assert "bill_of_lading" not in vehicle
-        assert "deposit_paid" not in vehicle
-        assert "internal_purchasing_cost" not in vehicle
-
-    assert upcoming_found
-
-
-# TC-04.05 - TS-4 [AC-2]: Data privacy test
-def test_ts4_restricted_financial_data_access(client):
-
-    response = client.get("/api/public/vehicles?q=Corolla")
-
-    assert response.status_code == 200
-
-    vehicles = response.get_json()
-
-    assert len(vehicles) == 2
-
-    restricted_fields = [
-        "base_foreign_price",
-        "base_currency",
-        "bill_of_lading",
-        "deposit_paid",
-        "internal_purchasing_cost"
+    records = [
+        ("Toyota", "Corolla", "Arrived", None, 10000),
+        ("Toyota", "Corolla", "In Transit", date(2026, 12, 1), 12500),
+        ("Toyota", "Camry", "Arrived", None, 14000),
+        ("Honda", "Civic", "Arrived", None, 11000),
+        ("Honda", "Accord", "Arrived", None, 13000),
     ]
 
-    for vehicle in vehicles:
+    vehicles_added = False
 
-        # Verify that the public response excludes restricted fields.
-        for field in restricted_fields:
-            assert field not in vehicle
+    for index, (make, model, status, eta, cost) in enumerate(records, 1):
+        reference = f"F04-DEMO-{index}"
+        existing_shipment = Shipment.query.filter_by(
+            bill_of_lading=reference
+        ).first()
 
-        # Check the public vehicle detail page.
-        detail = client.get(f"/vehicle/{vehicle['id']}")
+        if existing_shipment is not None:
+            continue
 
-        assert detail.status_code == 200
+        vehicle = Vehicle(
+            make=make,
+            model=model,
+            year=2020,
+            color="White",
+            mileage_km=40000,
+            engine_cc=1500,
+            base_foreign_price=cost,
+            deposit_paid=True,
+        )
 
-        for field in restricted_fields:
-            assert field.encode() not in detail.data
+        vehicle.shipment = Shipment(
+            bill_of_lading=reference,
+            status=status,
+            eta_date=eta,
+        )
 
-        assert b"Internal Purchasing Cost" not in detail.data
+        db.session.add(vehicle)
+        vehicles_added = True
+
+    if vehicles_added:
+        db.session.commit()
+
+
+def serialize_public_vehicle(vehicle: Vehicle) -> dict:
+    """Return only customer-safe vehicle information."""
+    return {
+        "id": vehicle.id,
+        "make": vehicle.make,
+        "model": vehicle.model,
+        "year": vehicle.year,
+        "category": vehicle.category,
+        "color": vehicle.color,
+        "mileage_km": vehicle.mileage_km,
+        "engine_cc": vehicle.engine_cc,
+        "features": vehicle.features,
+        "photo_urls": vehicle.photo_urls,
+        "availability": (
+            "Available Now"
+            if vehicle.shipment and vehicle.shipment.status == "Arrived"
+            else "Upcoming Arrival"
+        ),
+        "estimated_arrival": (
+            vehicle.shipment.eta_date.isoformat()
+            if vehicle.shipment and vehicle.shipment.eta_date
+            else None
+        ),
+    }
+
+
+def search_public_inventory(raw_query: str = "") -> list[dict]:
+    """Filter public inventory by make and model."""
+    load_demo_inventory()
+    clean_q = sanitize_search_query(raw_query)
+
+    if raw_query.strip() and not clean_q:
+        return []
+
+    q = Vehicle.query.filter_by(
+        is_deleted=False,
+        deposit_paid=True,
+    )
+
+    if clean_q:
+        for term in clean_q.split():
+            term = term.replace("\\", "\\\\")
+            term = term.replace("%", "\\%").replace("_", "\\_")
+            like = f"%{term}%"
+
+            q = q.filter(
+                Vehicle.make.ilike(like, escape="\\")
+                | Vehicle.model.ilike(like, escape="\\")
+            )
+
+    return [serialize_public_vehicle(vehicle) for vehicle in q.all()]
+
+
+def get_public_vehicle(vehicle_id: int) -> dict | None:
+    """Retrieve public details for a single vehicle."""
+    vehicle = Vehicle.query.filter_by(
+        id=vehicle_id,
+        is_deleted=False,
+        deposit_paid=True,
+    ).first()
+
+    return serialize_public_vehicle(vehicle) if vehicle else None
+
