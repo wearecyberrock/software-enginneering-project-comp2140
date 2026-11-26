@@ -7,23 +7,49 @@ local development (`flask --app app run`) or pytest tests.
 """
 
 import hashlib
+import hmac
 import os
 
 from sqlalchemy.pool import StaticPool
 import werkzeug.security as _werkzeug_security
 
-# Pyodide's WebAssembly Python build does not include hashlib.scrypt, which
-# Werkzeug 3 uses as the default for generate_password_hash(). Fall back to
-# pbkdf2:sha256 (built into Pyodide) when scrypt is unavailable.
+# Pyodide's WebAssembly Python build omits OpenSSL's scrypt and pbkdf2_hmac.
+# Provide a pure-Python RFC 2898 pbkdf2_hmac polyfill (using stdlib hmac + sha256)
+# and default Werkzeug password hashing to pbkdf2:sha256:10000 so both hashing
+# and check_password_hash() work fast inside Cloudflare Workers.
+if not hasattr(hashlib, "pbkdf2_hmac"):
+
+    def _pure_pbkdf2_hmac(hash_name, password, salt, iterations, dklen=None):
+        digest_mod = getattr(hashlib, hash_name)
+        hlen = digest_mod().digest_size
+        if dklen is None:
+            dklen = hlen
+        out = bytearray()
+        block_index = 1
+        while len(out) < dklen:
+            u = hmac.new(
+                password, salt + block_index.to_bytes(4, "big"), digest_mod
+            ).digest()
+            t = bytearray(u)
+            for _ in range(iterations - 1):
+                u = hmac.new(password, u, digest_mod).digest()
+                for i in range(hlen):
+                    t[i] ^= u[i]
+            out.extend(t)
+            block_index += 1
+        return bytes(out[:dklen])
+
+    hashlib.pbkdf2_hmac = _pure_pbkdf2_hmac
+
 if not hasattr(hashlib, "scrypt"):
     _orig_generate_password_hash = _werkzeug_security.generate_password_hash
 
-    def _pbkdf2_generate_password_hash(password, method="pbkdf2:sha256", salt_length=16):
-        if method == "scrypt":
-            method = "pbkdf2:sha256"
+    def _wasm_generate_password_hash(password, method="pbkdf2:sha256:10000", salt_length=16):
+        if method in ("scrypt", "pbkdf2:sha256"):
+            method = "pbkdf2:sha256:10000"
         return _orig_generate_password_hash(password, method=method, salt_length=salt_length)
 
-    _werkzeug_security.generate_password_hash = _pbkdf2_generate_password_hash
+    _werkzeug_security.generate_password_hash = _wasm_generate_password_hash
 
 # Default to in-memory SQLite on Cloudflare Workers so there are zero filesystem
 # permission or /tmp-reset issues between deploy snapshot and runtime requests.
@@ -66,21 +92,10 @@ def _ensure_demo_seeded():
             user = User.query.filter_by(username=username).first()
             if user is not None:
                 user.password_hash = _werkzeug_security.generate_password_hash(
-                    demo_password, method="pbkdf2:sha256"
+                    demo_password, method="pbkdf2:sha256:10000"
                 )
         db.session.commit()
     _seeded = True
-
-
-from werkzeug.exceptions import HTTPException  # noqa: E402
-import traceback  # noqa: E402
-
-
-@app.errorhandler(Exception)
-def _show_error(err):
-    if isinstance(err, HTTPException):
-        return err
-    return f"<pre>{traceback.format_exc()}</pre>", 500
 
 
 # Expose the Flask WSGI app as the Cloudflare Worker Default entrypoint
