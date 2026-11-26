@@ -1,7 +1,14 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "karmanjahni-tracker",
+  "name": "software-enginneering-project-comp2140",
   "main": "worker.py",
   "compatibility_date": "2026-11-26",
-  "compatibility_flags": ["python_workers"]
+  "compatibility_flags": ["python_workers"],
+  "rules": [
+    {
+      "type": "Data",
+      "globs": ["**/*.css", "**/*.js", "**/*.svg", "**/*.jpg", "**/*.png", "**/*.json"],
+      "fallthrough": true
+    }
+  ]
 }
