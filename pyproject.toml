@@ -1,0 +1,18 @@
+[project]
+name = "karmanjahni-tracker"
+version = "0.1.0"
+description = "Karmanjahni Shipment and Inventory Tracking System (COMP2140)"
+requires-python = ">=3.12"
+dependencies = [
+  "Flask==3.1.0",
+  "Flask-SQLAlchemy==3.1.1",
+  "SQLAlchemy==2.0.36",
+  "Werkzeug==3.1.3",
+  "python-dotenv==1.0.1",
+]
+
+[dependency-groups]
+dev = [
+  "workers-py",
+  "workers-runtime-sdk",
+]
