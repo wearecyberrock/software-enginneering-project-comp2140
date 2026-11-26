@@ -6,9 +6,178 @@
 
 {% block content %}
 <section class="kj-card">
-  <h1>Shipment Status &amp; ETA Updating (F-06)</h1>
-  <p>Owner: <strong>Shakir Russell</strong> — Authorized staff updates from supplier notices.</p>
-  <!-- TODO (Shakir): Build BoL lookup, status dropdown (In Transit/Delayed/Arrived), and ETA override form -->
+  <div class="admin-header">
+    <div>
+      <h1>Shipment Status &amp; ETA Updating</h1>
+      <p class="admin-sub">Update transit status, override arrival dates, or archive outdated shipment records.</p>
+    </div>
+    <div class="staff-bar">
+      <span class="staff-pill">{{ staff_username }}{% if staff_role %} ({{ staff_role.replace("_", " ") }}){% endif %}</span>
+      <form method="post" action="{{ url_for('shakir_bp.staff_logout') }}">
+        <button class="kj-btn kj-btn-gold" type="submit">Log Out</button>
+      </form>
+    </div>
+  </div>
+
+  {% if message %}
+  <div class="alert alert-success" role="status">{{ message }}</div>
+  {% endif %}
+  {% if error %}
+  <div class="alert alert-error" role="alert">{{ error }}</div>
+  {% endif %}
+
+  <form class="bol-search-form" method="get" action="{{ url_for('shakir_bp.manage_shipments') }}" role="search">
+    <label for="bol-search" class="sr-only">Filter by Bill of Lading</label>
+    <input
+      id="bol-search"
+      class="kj-input"
+      type="search"
+      name="bol"
+      value="{{ bol_query }}"
+      placeholder="Search by Bill of Lading (e.g. KJ-BOL-2026-001)..."
+      maxlength="64"
+    >
+    <button class="kj-btn kj-btn-primary" type="submit">Find BoL</button>
+    {% if bol_query %}
+    <a class="kj-btn kj-btn-gold" href="{{ url_for('shakir_bp.manage_shipments') }}">Clear</a>
+    {% endif %}
+  </form>
+</section>
+
+<section class="kj-card">
+  <h2>
+    {% if selected %}
+      Edit Shipment: {{ selected.bill_of_lading }}
+    {% else %}
+      Update Shipment Status &amp; ETA
+    {% endif %}
+  </h2>
+
+  {% if selected and selected.vehicle %}
+  <p class="admin-sub">
+    Vehicle: <strong>{{ selected.vehicle.year }} {{ selected.vehicle.make }} {{ selected.vehicle.model }}</strong>
+    {% if selected.vehicle.color %}({{ selected.vehicle.color }}){% endif %}
+  </p>
+  {% endif %}
+
+  <form
+    id="shipment-update-form"
+    class="update-form"
+    method="post"
+    action="{{ url_for('shakir_bp.update_shipment', bol=selected.bill_of_lading) if selected else url_for('shakir_bp.manage_shipments') }}"
+  >
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="bill_of_lading">Bill of Lading</label>
+        <input
+          id="bill_of_lading"
+          class="kj-input"
+          type="text"
+          name="bill_of_lading"
+          value="{{ selected.bill_of_lading if selected else bol_query }}"
+          placeholder="e.g. KJ-BOL-2026-001"
+          required
+          maxlength="64"
+          {% if selected %}readonly{% endif %}
+        >
+      </div>
+
+      <div class="form-field">
+        <label for="status">Transit Status</label>
+        <select id="status" class="kj-select" name="status" required>
+          {% for opt in status_options %}
+          <option value="{{ opt }}" {% if selected and selected.status == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="eta_date">Estimated Arrival Date (ETA)</label>
+        <input
+          id="eta_date"
+          class="kj-input"
+          type="date"
+          name="eta_date"
+          value="{{ selected.eta_date.isoformat() if selected and selected.eta_date else '' }}"
+        >
+      </div>
+
+      <div class="form-field form-field-wide" id="delay-reason-group">
+        <label for="delay_reason">Delay Reason <span class="optional-note">(optional, recommended if Delayed)</span></label>
+        <input
+          id="delay_reason"
+          class="kj-input"
+          type="text"
+          name="delay_reason"
+          value="{{ selected.delay_reason if selected and selected.delay_reason else '' }}"
+          placeholder="e.g. Port congestion or severe weather"
+          maxlength="255"
+        >
+      </div>
+    </div>
+
+    <p id="form-client-error" class="client-error" hidden></p>
+
+    <div class="form-actions">
+      <button class="kj-btn kj-btn-primary" type="submit">Save Shipment Update</button>
+      {% if selected %}
+      <a class="kj-btn kj-btn-gold" href="{{ url_for('shakir_bp.manage_shipments') }}">Cancel Selection</a>
+      {% endif %}
+    </div>
+  </form>
+</section>
+
+<section class="kj-card">
+  <h2>Active Shipments ({{ shipments|length }})</h2>
+
+  {% if shipments %}
+  <div class="table-wrap">
+    <table class="shipment-table">
+      <thead>
+        <tr>
+          <th>Bill of Lading</th>
+          <th>Vehicle</th>
+          <th>Status</th>
+          <th>Current ETA</th>
+          <th>Delay Reason</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in shipments %}
+        <tr class="{% if selected and selected.id == s.id %}is-selected{% endif %}">
+          <td><strong>{{ s.bill_of_lading }}</strong></td>
+          <td>
+            {% if s.vehicle %}
+              {{ s.vehicle.year }} {{ s.vehicle.make }} {{ s.vehicle.model }}
+            {% else %}
+              Vehicle #{{ s.vehicle_id }}
+            {% endif %}
+          </td>
+          <td>
+            <span class="kj-badge {{ badge_classes.get(s.status, 'badge-in-transit') }}">{{ s.status }}</span>
+          </td>
+          <td>{{ s.eta_date.isoformat() if s.eta_date else "Not set" }}</td>
+          <td>{{ s.delay_reason or "—" }}</td>
+          <td class="row-actions">
+            <a class="kj-btn kj-btn-primary btn-sm" href="{{ url_for('shakir_bp.update_shipment', bol=s.bill_of_lading) }}">Edit</a>
+            <form
+              method="post"
+              action="{{ url_for('shakir_bp.delete_shipment', bol=s.bill_of_lading) }}"
+              class="inline-form delete-form"
+              data-bol="{{ s.bill_of_lading }}"
+            >
+              <button class="kj-btn btn-danger btn-sm" type="submit">Archive</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="admin-sub">No active shipments found.</p>
+  {% endif %}
 </section>
 {% endblock %}
 

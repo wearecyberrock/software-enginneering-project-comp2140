@@ -5,9 +5,43 @@
 {% endblock %}
 
 {% block content %}
-<section class="kj-card" style="max-width: 440px; margin: 2rem auto;">
+<section class="kj-card login-card">
   <h1>Staff Portal Login</h1>
-  <p>Authorized Karmanjahni personnel only.</p>
-  <!-- TODO (Shakir): Implement staff username/password login form -->
+  <p class="admin-sub">Authorized Karmanjahni personnel only.</p>
+
+  {% if error %}
+  <div class="alert alert-error" role="alert">{{ error }}</div>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('shakir_bp.staff_login') }}" class="login-form">
+    <div class="form-field">
+      <label for="username">Username or Email</label>
+      <input
+        id="username"
+        class="kj-input"
+        type="text"
+        name="username"
+        value="{{ username }}"
+        placeholder="Enter staff username or email"
+        autocomplete="username"
+        required
+      >
+    </div>
+
+    <div class="form-field">
+      <label for="password">Password</label>
+      <input
+        id="password"
+        class="kj-input"
+        type="password"
+        name="password"
+        placeholder="Enter password"
+        autocomplete="current-password"
+        required
+      >
+    </div>
+
+    <button class="kj-btn kj-btn-primary login-submit" type="submit">Sign In</button>
+  </form>
 </section>
 {% endblock %}

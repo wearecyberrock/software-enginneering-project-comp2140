@@ -1,1 +1,206 @@
 /* Styles for F-06 Shipment Status & ETA Admin UI (Shakir Russell) */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.admin-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.admin-header h1 {
+  margin-bottom: 0.25rem;
+}
+
+.admin-sub {
+  color: var(--kj-text-muted);
+  margin: 0 0 1rem;
+}
+
+.staff-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.staff-pill {
+  background: var(--kj-cream);
+  color: var(--kj-navy-primary);
+  border: 1px solid var(--kj-gold-trim);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.alert {
+  padding: 0.8rem 1rem;
+  border-radius: var(--kj-radius-btn);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.alert-success {
+  background: var(--kj-arrived-bg);
+  color: var(--kj-arrived-text);
+  border: 1px solid #86EFAC;
+}
+
+.alert-error {
+  background: var(--kj-delayed-bg);
+  color: var(--kj-delayed-text);
+  border: 1px solid var(--kj-delayed-border);
+}
+
+.bol-search-form {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.bol-search-form .kj-input {
+  flex: 1 1 260px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-field label {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--kj-navy-primary);
+}
+
+.form-field-wide {
+  grid-column: 1 / -1;
+}
+
+.optional-note {
+  font-weight: 400;
+  color: var(--kj-text-muted);
+  font-size: 0.82rem;
+}
+
+.is-delay-highlighted .kj-input {
+  border-color: var(--kj-delayed-border);
+  background: #FFFBFB;
+}
+
+.client-error {
+  color: var(--kj-delayed-text);
+  font-weight: 600;
+  margin: 0.75rem 0 0;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.shipment-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.shipment-table th,
+.shipment-table td {
+  text-align: left;
+  padding: 0.75rem 0.65rem;
+  border-bottom: 1px solid var(--kj-border);
+  vertical-align: middle;
+}
+
+.shipment-table th {
+  color: var(--kj-navy-primary);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--kj-bg);
+}
+
+.shipment-table tr.is-selected {
+  background: var(--kj-cream);
+}
+
+.badge-cleared {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.inline-form {
+  display: inline;
+  margin: 0;
+}
+
+.btn-sm {
+  min-height: 36px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.btn-danger {
+  background: var(--kj-delayed-bg);
+  color: var(--kj-delayed-text);
+  border: 1px solid var(--kj-delayed-border);
+}
+
+.btn-danger:hover {
+  background: #FECACA;
+}
+
+/* Staff Login Card */
+.login-card {
+  max-width: 440px;
+  margin: 2rem auto;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.login-submit {
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .bol-search-form .kj-btn {
+    flex: 1 1 100%;
+  }
+}
