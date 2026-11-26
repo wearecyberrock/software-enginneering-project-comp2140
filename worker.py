@@ -15,8 +15,8 @@ import werkzeug.security as _werkzeug_security
 
 # Pyodide's WebAssembly Python build omits OpenSSL's scrypt and pbkdf2_hmac.
 # Provide a pure-Python RFC 2898 pbkdf2_hmac polyfill (using stdlib hmac + sha256)
-# and use 1000 iterations on Cloudflare Workers so login stays well within the
-# Worker free-tier CPU budget while remaining 100% compatible with Werkzeug.
+# and default Werkzeug password hashing to pbkdf2:sha256:10000 so both hashing
+# and check_password_hash() work fast inside Cloudflare Workers.
 if not hasattr(hashlib, "pbkdf2_hmac"):
 
     def _pure_pbkdf2_hmac(hash_name, password, salt, iterations, dklen=None):
@@ -44,9 +44,9 @@ if not hasattr(hashlib, "pbkdf2_hmac"):
 if not hasattr(hashlib, "scrypt"):
     _orig_generate_password_hash = _werkzeug_security.generate_password_hash
 
-    def _wasm_generate_password_hash(password, method="pbkdf2:sha256:1000", salt_length=16):
+    def _wasm_generate_password_hash(password, method="pbkdf2:sha256:10000", salt_length=16):
         if method in ("scrypt", "pbkdf2:sha256"):
-            method = "pbkdf2:sha256:1000"
+            method = "pbkdf2:sha256:10000"
         return _orig_generate_password_hash(password, method=method, salt_length=salt_length)
 
     _werkzeug_security.generate_password_hash = _wasm_generate_password_hash
@@ -80,40 +80,21 @@ _seeded = False
 
 @app.before_request
 def _ensure_demo_seeded():
-    """Ensure tables, duty schedule, demo records, and testaccount exist on first request."""
+    """Ensure tables, duty schedule, and demo records exist on the first request."""
     global _seeded
     if _seeded:
         return
     initialize_inventory()
     created_accounts = seed_demo()
-    demo_password = os.environ.get("DEMO_PASSWORD", "testpassword")
-    demo_hash = _werkzeug_security.generate_password_hash(
-        demo_password, method="pbkdf2:sha256:1000"
-    )
+    demo_password = os.environ.get("DEMO_PASSWORD", "Karmanjahni2026!")
     if created_accounts:
         for username, _ in created_accounts:
             user = User.query.filter_by(username=username).first()
             if user is not None:
-                user.password_hash = demo_hash
-
-    # Create/ensure the requested owner login: testaccount / testpassword
-    test_user = User.query.filter_by(username="testaccount").first()
-    if test_user is None:
-        db.session.add(
-            User(
-                username="testaccount",
-                email="testaccount@karmanjahni.com",
-                password_hash=demo_hash,
-                role="owner",
-                is_active=True,
-            )
-        )
-    else:
-        test_user.password_hash = demo_hash
-        test_user.role = "owner"
-        test_user.is_active = True
-
-    db.session.commit()
+                user.password_hash = _werkzeug_security.generate_password_hash(
+                    demo_password, method="pbkdf2:sha256:10000"
+                )
+        db.session.commit()
     _seeded = True
 
 
