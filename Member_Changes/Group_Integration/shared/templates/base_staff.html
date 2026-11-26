@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Staff Portal | Karmanjahni Co. Ltd.{% endblock %}</title>
+  <link rel="stylesheet" href="/resources/design/theme.css">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <header class="kj-navbar">
+    <a href="{{ '/tablet/' if session.get('user_role') == 'sales_staff' else '/tracking/' }}" class="kj-brand">
+      <img src="/resources/design/assets/karmanjahni-logo.jpg" alt="Karmanjahni Company Limited Logo">
+      <div>
+        <span class="kj-brand-title">KARMANJAHNI STAFF PORTAL</span>
+        <span class="kj-brand-sub">Shipment &amp; Inventory Tracking System</span>
+      </div>
+    </a>
+    <nav class="kj-nav-links">
+      {% if session.get("user_role") in ("owner", "purchasing_manager", "internal_staff") %}
+      <a href="/tracking/">Track BoL (F-01)</a>
+      {% endif %}
+      {% if session.get("user_role") in ("owner", "purchasing_manager") %}
+      <a href="/inventory/add">Log Vehicle (F-02)</a>
+      {% endif %}
+      {% if session.get("user_role") in ("owner", "sales_staff") %}
+      <a href="/tablet/">Sales Tablet (F-03)</a>
+      {% endif %}
+      {% if session.get("user_role") in ("owner", "purchasing_manager") %}
+      <a href="/admin/pricing-rates">Pricing Rates (F-05)</a>
+      {% endif %}
+      {% if session.get("user_role") in ("owner", "purchasing_manager", "internal_staff") %}
+      <a href="/shipments/manage">Update ETA (F-06)</a>
+      {% endif %}
+      <a href="/">Public Site</a>
+      <form action="/staff/logout" method="post"><button class="kj-btn" type="submit">Sign out</button></form>
+    </nav>
+  </header>
+
+  <main class="kj-container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="kj-footer">
+    Karmanjahni Company Limited (Internal Staff System) &bull; Since 2006 &bull; Kingston, Jamaica
+  </footer>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
