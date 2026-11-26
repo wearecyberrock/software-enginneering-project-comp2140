@@ -1,5 +1,23 @@
-{# Reusable partial embedded in F-03 (Amanda) & F-04 (Ashaya) vehicle views #}
-<div class="kj-price-estimate">
-  <!-- TODO (Tyrone): Display formatted JMD estimate & disclaimer about fluctuating FX/duties -->
-  <strong>Estimated Price (JMD):</strong> <span>Calculating...</span>
+{# F-05: Reusable dynamic pricing component #}
+{# Embedded in F-03 and F-04 vehicle views #}
+
+<div class="kj-price-estimate"
+     data-vehicle-id="{{ vehicle.id }}"
+     data-pricing-url="{{ url_for('tyrone_bp.pricing_estimate', vehicle_id=vehicle.id) }}">
+
+    <div class="pricing-label">
+        Estimated Price (JMD)
+    </div>
+
+    <div class="pricing-amount"
+         aria-live="polite"
+         aria-atomic="true">
+        Calculating...
+    </div>
+
+    <div class="pricing-disclaimer">
+        Estimated price is subject to changes in foreign
+        exchange rates and applicable vehicle duties.
+    </div>
+
 </div>
