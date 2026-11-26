@@ -1,2 +1,125 @@
 /* Styles for F-01 Shipment Tracking & F-02 Manual Data Entry (Randre Fearon) */
-/* Use shared CSS variables from /resources/design/theme.css */
+/* Uses shared CSS variables from /resources/design/theme.css (no hard-coded brand colours) */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.page-sub { color: var(--kj-text-muted); margin: 0 0 1rem; }
+.hint { color: var(--kj-text-muted); font-size: 0.9rem; margin: 0.35rem 0 0; }
+.req { color: var(--kj-delayed-text); font-weight: 700; }
+
+/* ---------- F-01: search box ---------- */
+.tracking-form { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.tracking-form .kj-input { flex: 1 1 280px; }
+.tracking-form .kj-btn { flex: 0 0 auto; }
+
+/* ---------- F-01: result card ---------- */
+.tracking-result { border-top-color: var(--kj-gold-accent); }
+
+/* AC-2: a Delayed shipment is visibly flagged - red edge, red banner, red ETA, red badge */
+.tracking-result-delayed {
+  border-top-color: var(--kj-delayed-border);
+  border-left: 6px solid var(--kj-delayed-border);
+}
+.delay-banner {
+  background: var(--kj-delayed-bg);
+  color: var(--kj-delayed-text);
+  border: 1.5px solid var(--kj-delayed-border);
+  border-radius: var(--kj-radius-btn);
+  padding: 0.6rem 0.9rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+}
+.eta-delayed { color: var(--kj-delayed-text); font-weight: 800; }
+
+.result-grid {
+  display: grid;
+  gap: 1rem 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  margin: 0;
+}
+.result-grid dt { color: var(--kj-text-muted); font-size: 0.85rem; margin-bottom: 0.2rem; }
+.result-grid dd { margin: 0; font-weight: 700; font-size: 1.05rem; }
+
+.tracking-empty { border-top-color: var(--kj-gold-accent); }
+
+/* ---------- F-02: form layout ---------- */
+.form-section h2 {
+  font-size: 1.1rem;
+  border-bottom: 2px solid var(--kj-gold-accent);
+  padding-bottom: 0.4rem;
+  margin-bottom: 1rem;
+}
+.entry-grid {
+  display: grid;
+  gap: 1rem 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  margin-bottom: 1rem;
+}
+.form-field label { display: block; font-weight: 600; margin-bottom: 0.3rem; }
+textarea.kj-input { min-height: var(--kj-touch-min); resize: vertical; }
+
+/* Invalid fields: red border + light red background, plus a message underneath */
+.field-invalid { border-color: var(--kj-delayed-border); background: var(--kj-delayed-bg); }
+.field-error {
+  color: var(--kj-delayed-text);
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin: 0.35rem 0 0;
+}
+
+/* ---------- F-02: deposit checkbox (a big, easy-to-hit target) ---------- */
+.deposit-box {
+  border: 1.5px solid var(--kj-gold-trim);
+  background: var(--kj-cream);
+  border-radius: var(--kj-radius-btn);
+  padding: 0.75rem 1rem;
+}
+.field-invalid-box { border-color: var(--kj-delayed-border); background: var(--kj-delayed-bg); }
+.check-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: var(--kj-touch-min);
+  font-weight: 600;
+  cursor: pointer;
+}
+.check-label input[type="checkbox"] { width: 24px; height: 24px; flex: 0 0 24px; }
+
+/* ---------- F-02: photo previews ---------- */
+.photo-previews { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.75rem; }
+.photo-previews img {
+  width: 96px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: var(--kj-radius-btn);
+  border: 1px solid var(--kj-border);
+}
+
+/* ---------- F-02: banners and buttons ---------- */
+.form-alert,
+.form-success {
+  border-radius: var(--kj-radius-card);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.form-alert p, .form-success p { margin: 0 0 0.5rem; }
+.form-alert ul { margin: 0 0 0.5rem; padding-left: 1.25rem; }
+.form-alert {
+  background: var(--kj-delayed-bg);
+  color: var(--kj-delayed-text);
+  border: 1.5px solid var(--kj-delayed-border);
+}
+.form-alert[hidden] { display: none; }   /* class display would otherwise override [hidden] */
+.form-success {
+  background: var(--kj-arrived-bg);
+  color: var(--kj-arrived-text);
+  border: 1.5px solid var(--kj-arrived-text);
+}
+.form-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.25rem; }

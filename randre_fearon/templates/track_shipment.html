@@ -7,11 +7,67 @@
 {% block content %}
 <section class="kj-card">
   <h1>Shipment &amp; Inventory Tracking (F-01)</h1>
-  <p>Owner: <strong>Randre Fearon</strong> — Search by Bill of Lading (BoL) number.</p>
-  <!-- TODO (Randre): Build BoL search form, ETA display, and .badge-delayed highlight (AC-2) -->
-  <form method="get" action="/tracking/">
-    <input class="kj-input" type="text" name="bol" value="{{ bol }}" placeholder="Enter Bill of Lading (e.g. KJ-BOL-2026-001)">
-    <button class="kj-btn kj-btn-primary" type="submit" style="margin-top: 0.75rem;">Search Shipment</button>
+  <p class="page-sub">Owner: <strong>Randre Fearon</strong> &mdash; Search by Bill of Lading (BoL) number.</p>
+
+  <form class="tracking-form" method="get" action="/tracking/" role="search">
+    <label for="bol-input" class="sr-only">Bill of Lading number</label>
+    <input id="bol-input" class="kj-input" type="text" name="bol" value="{{ bol }}"
+           placeholder="Enter Bill of Lading (e.g. KJ-BOL-2026-001)" maxlength="64" autocomplete="off">
+    <button class="kj-btn kj-btn-primary" type="submit">Search Shipment</button>
   </form>
 </section>
+
+{% if result %}
+<section class="kj-card tracking-result{% if result.is_delayed %} tracking-result-delayed{% endif %}"
+         id="tracking-result" data-delayed="{{ 'true' if result.is_delayed else 'false' }}">
+  {% if result.vehicle_title %}<h2>{{ result.vehicle_title }}</h2>{% endif %}
+
+  {% if result.is_delayed %}
+  <p class="delay-banner" id="delay-banner" role="alert">
+    This shipment is delayed.{% if result.delay_reason %} Reason: {{ result.delay_reason }}{% endif %}
+  </p>
+  {% endif %}
+
+  <dl class="result-grid">
+    <div>
+      <dt>Bill of Lading</dt>
+      <dd id="result-bol">{{ result.bill_of_lading }}</dd>
+    </div>
+    <div>
+      <dt>Status</dt>
+      <dd><span id="result-status" class="kj-badge {{ result.badge_class }}">{{ result.status }}</span></dd>
+    </div>
+    <div>
+      <dt>Estimated arrival (ETA)</dt>
+      <dd id="result-eta" class="{% if result.is_delayed %}eta-delayed{% endif %}">{{ result.eta_display }}</dd>
+    </div>
+    {% if result.departure_display %}
+    <div>
+      <dt>Departed</dt>
+      <dd id="result-departure">{{ result.departure_display }}</dd>
+    </div>
+    {% endif %}
+    {% if result.updated_display %}
+    <div>
+      <dt>Last updated</dt>
+      <dd id="result-updated">{{ result.updated_display }}</dd>
+    </div>
+    {% endif %}
+  </dl>
+</section>
+{% elif searched %}
+<section class="kj-card tracking-empty" id="not-found" role="alert">
+  <h2>Shipment not found</h2>
+  {% if bol %}
+  <p>No shipment matches the Bill of Lading number &ldquo;{{ bol }}&rdquo;.</p>
+  {% else %}
+  <p>Please type a Bill of Lading number to search.</p>
+  {% endif %}
+  {% if bol and not bol_looks_valid %}
+  <p class="hint">Bill of Lading numbers use letters, numbers, hyphens (-) and underscores (_) only, 3 to 64 characters.</p>
+  {% else %}
+  <p class="hint">Check the number and try again, or ask the purchasing manager whether the unit has been logged yet.</p>
+  {% endif %}
+</section>
+{% endif %}
 {% endblock %}

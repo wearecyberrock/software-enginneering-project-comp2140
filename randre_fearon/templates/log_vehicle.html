@@ -5,11 +5,123 @@
 {% endblock %}
 
 {% block content %}
+{# Small reusable pieces so every field is built the same way. #}
+{% macro field_error(name) %}
+  {% if errors.get(name) %}<p class="field-error" id="{{ name }}-error" role="alert">{{ errors[name] }}</p>{% endif %}
+{% endmacro %}
+
+{% macro text_input(name, label, required=False, type="text", placeholder="", maxlength="", inputmode="") %}
+<div class="form-field" data-field="{{ name }}">
+  <label for="{{ name }}">{{ label }}{% if required %} <span class="req" aria-hidden="true">*</span>{% endif %}</label>
+  <input class="kj-input{% if errors.get(name) %} field-invalid{% endif %}" id="{{ name }}" name="{{ name }}"
+         type="{{ type }}" value="{{ form.get(name, '') }}"
+         {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+         {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+         {% if inputmode %}inputmode="{{ inputmode }}"{% endif %}
+         {% if required %}data-required="true" data-label="{{ label }}"{% endif %}
+         {% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
+  {{ field_error(name) }}
+</div>
+{% endmacro %}
+
+{% macro select_input(name, label, options, default="", blank="") %}
+<div class="form-field" data-field="{{ name }}">
+  <label for="{{ name }}">{{ label }}</label>
+  <select class="kj-select{% if errors.get(name) %} field-invalid{% endif %}" id="{{ name }}" name="{{ name }}"
+          {% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
+    {% if blank %}<option value="">{{ blank }}</option>{% endif %}
+    {% for value, text in options %}
+    <option value="{{ value }}"{% if form.get(name, default) == value %} selected{% endif %}>{{ text }}</option>
+    {% endfor %}
+  </select>
+  {{ field_error(name) }}
+</div>
+{% endmacro %}
+
 <section class="kj-card">
   <h1>Log New Vehicle Inventory (F-02)</h1>
-  <p>Owner: <strong>Randre Fearon</strong> — Purchasing Department Data Entry.</p>
-  <!-- TODO (Randre): Add vehicle specs, photos, BoL, base foreign price, and mandatory Deposit Paid checkbox -->
+  <p class="page-sub">Owner: <strong>Randre Fearon</strong> &mdash; Purchasing Department Data Entry.
+    Fields marked <span class="req">*</span> are required. A unit can only be saved once its deposit is paid.</p>
 </section>
+
+{% if saved %}
+<section class="form-success" id="saved-banner" role="status">
+  <p><strong>Vehicle saved.</strong> {{ saved.vehicle_title }} (Bill of Lading {{ saved.bill_of_lading }})
+    is now active and trackable.</p>
+  <a class="kj-btn kj-btn-gold" href="/tracking/?bol={{ saved.bill_of_lading|urlencode }}">Track this shipment</a>
+</section>
+{% endif %}
+
+<section class="form-alert" id="form-errors" role="alert"{% if not errors %} hidden{% endif %}>
+  <p><strong>Vehicle not saved.</strong> Please fix the highlighted items below:</p>
+  <ul id="form-errors-list">{% for message in errors.values() %}<li>{{ message }}</li>{% endfor %}</ul>
+  {% if photos_lost %}<p>Your photos were not kept when the page reloaded. Please choose them again.</p>{% endif %}
+</section>
+
+<form id="vehicle-form" method="post" action="/inventory/add" enctype="multipart/form-data" novalidate>
+
+  <section class="kj-card form-section">
+    <h2>Vehicle details</h2>
+    <div class="entry-grid">
+      {{ text_input("make", "Make", required=True, maxlength=80, placeholder="e.g. Toyota") }}
+      {{ text_input("model", "Model", required=True, maxlength=100, placeholder="e.g. Hilux") }}
+      {{ text_input("year", "Year", required=True, type="number", inputmode="numeric", placeholder="e.g. 2021") }}
+      {{ select_input("category", "Category", categories, default="car") }}
+      {{ text_input("color", "Colour", maxlength=50, placeholder="e.g. Wine Red") }}
+      {{ text_input("mileage_km", "Mileage (km)", type="number", inputmode="numeric", placeholder="e.g. 42000") }}
+      {{ text_input("engine_cc", "Engine size (cc)", required=True, type="number", inputmode="numeric", placeholder="e.g. 2800") }}
+      {{ select_input("origin_country", "Country of origin", countries, blank="Choose a country") }}
+    </div>
+    <div class="form-field" data-field="features">
+      <label for="features">Features</label>
+      <textarea class="kj-input{% if errors.get('features') %} field-invalid{% endif %}" id="features" name="features"
+                rows="2" maxlength="1000" placeholder="e.g. Sunroof, Keyless Entry, Alloy Rims">{{ form.get('features', '') }}</textarea>
+      <p class="hint">Separate features with commas.</p>
+      {{ field_error("features") }}
+    </div>
+  </section>
+
+  <section class="kj-card form-section">
+    <h2>Purchase &amp; shipment details</h2>
+    <div class="entry-grid">
+      {{ text_input("bill_of_lading", "Bill of Lading number", required=True, maxlength=64, placeholder="e.g. BOL-205") }}
+      {{ text_input("base_foreign_price", "Base price (foreign currency)", required=True, inputmode="decimal", placeholder="e.g. 18500") }}
+      {{ select_input("base_currency", "Currency", currencies, default="USD") }}
+      {{ text_input("departure_date", "Departure date (optional)", type="date") }}
+      {{ text_input("eta_date", "Estimated arrival, ETA (optional)", type="date") }}
+    </div>
+  </section>
+
+  <section class="kj-card form-section">
+    <h2>Photos</h2>
+    <div class="form-field" data-field="photos">
+      <label for="photos">Vehicle photos (optional)</label>
+      <input class="kj-input{% if errors.get('photos') %} field-invalid{% endif %}" id="photos" name="photos" type="file"
+             accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+      <p class="hint">Up to 10 photos (JPG, PNG, GIF or WEBP), 5 MB each.</p>
+      {{ field_error("photos") }}
+      <div class="photo-previews" id="photo-previews" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="kj-card form-section">
+    <h2>Deposit confirmation</h2>
+    <div class="deposit-box{% if errors.get('deposit_paid') %} field-invalid-box{% endif %}" data-field="deposit_paid">
+      <label class="check-label" for="deposit_paid">
+        <input type="checkbox" id="deposit_paid" name="deposit_paid" value="on"
+               {% if form.get('deposit_paid') %}checked{% endif %}
+               {% if errors.get('deposit_paid') %}aria-invalid="true" aria-describedby="deposit_paid-error"{% endif %}>
+        <span>Deposit paid &mdash; the deposit for this vehicle has been paid <span class="req" aria-hidden="true">*</span></span>
+      </label>
+      {{ field_error("deposit_paid") }}
+    </div>
+  </section>
+
+  <div class="form-actions">
+    <button class="kj-btn kj-btn-primary" type="submit">Save vehicle</button>
+    <a class="kj-btn kj-btn-gold" href="/inventory/add">Clear form</a>
+  </div>
+</form>
 {% endblock %}
 
 {% block extra_js %}
