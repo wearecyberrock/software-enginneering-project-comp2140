@@ -1,1 +1,209 @@
-/* Styles for F-06 Shipment Status & ETA Admin UI (Shakir Russell) */
+/* ============================================================================
+   INTRODUCTION — shakir_russell/static/shipment_admin.css
+   ============================================================================
+   Author:      Shakir Russell (Student ID: 620181663)
+   Feature:     F-06 Shipment Status & ETA Updating + Staff Login UI
+
+   What this file does:
+     Adds clean, simple layout styles for `staff_login.html` and
+     `update_shipment.html`.
+
+   What it pulls from the shared/group code:
+     Uses the shared CSS custom properties (variables like `--kj-navy-primary`,
+     `--kj-border`, `--kj-delayed-bg`, `--kj-arrived-bg`, `--kj-radius-btn`)
+     defined in `resources/design/theme.css` so my pages match the exact
+     Karmanjahni brand look used by the rest of the team.
+   ============================================================================ */
+
+/* Center the staff login card on the page with a comfortable max width */
+.shakir-login-card {
+  max-width: 440px;
+  margin: 2rem auto;
+}
+
+/* Muted helper text using the shared muted text color variable */
+.shakir-muted {
+  color: var(--kj-text-muted);
+  margin-top: 0;
+}
+
+/* Small helper hint text below form inputs */
+.shakir-help {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--kj-text-muted);
+}
+
+/* Top header row inside the F-06 card (title on left, signed-in bar on right) */
+.shakir-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+/* Container for the signed-in username badge and Log Out button */
+.shakir-staff-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Small pill showing who is currently logged in */
+.shakir-staff-pill {
+  background: var(--kj-bg);
+  border: 1px solid var(--kj-border);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.85rem;
+  color: var(--kj-text-dark);
+}
+
+/* Shared base style for success and error alert banners */
+.shakir-alert {
+  padding: 0.85rem 1rem;
+  border-radius: var(--kj-radius-btn);
+  margin-bottom: 1rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* Green confirmation banner using shared arrived status tokens */
+.shakir-alert-success {
+  background-color: var(--kj-arrived-bg);
+  color: var(--kj-arrived-text);
+  border: 1px solid var(--kj-arrived-text);
+}
+
+/* Red error banner using shared delayed status tokens */
+.shakir-alert-error {
+  background-color: var(--kj-delayed-bg);
+  color: var(--kj-delayed-text);
+  border: 1px solid var(--kj-delayed-border);
+}
+
+/* Vertical spacing between fields inside our forms */
+.shakir-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Single label + input group */
+.shakir-field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: var(--kj-text-dark);
+}
+
+/* Horizontal BoL search bar row */
+.shakir-search-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Let the BoL search input grow to fill available width */
+.shakir-search-input {
+  flex: 1 1 260px;
+}
+
+/* Header inside the Edit Shipment card */
+.shakir-edit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+/* Two-column grid for Status dropdown and ETA date picker (stacks on small screens) */
+.shakir-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+/* Row of Save / Cancel buttons */
+.shakir-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Full-width button helper (used on the Login form) */
+.shakir-btn-full {
+  width: 100%;
+}
+
+/* Smaller button variant for the "Edit" link inside the Active Shipments table */
+.shakir-btn-sm {
+  min-height: 36px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+}
+
+/* Subtle secondary button style (Cancel / Log Out) */
+.shakir-btn-outline {
+  background: transparent;
+  color: var(--kj-navy-primary);
+  border: 1.5px solid var(--kj-border);
+}
+
+.shakir-btn-outline:hover {
+  background: var(--kj-bg);
+}
+
+/* Red button style for the Soft-Delete / Archive action (SRS §3.2) */
+.shakir-btn-danger {
+  background-color: var(--kj-delayed-text);
+  color: #FFFFFF;
+}
+
+.shakir-btn-danger:hover {
+  background-color: #991B1B;
+}
+
+/* Separated section at the bottom of the Edit card for soft-deleting a record */
+.shakir-danger-zone {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed var(--kj-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Wrapper so the table scrolls smoothly on narrow screens without breaking layout */
+.shakir-table-wrap {
+  overflow-x: auto;
+}
+
+/* Clean table styling for Active Shipments */
+.shakir-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.shakir-table th,
+.shakir-table td {
+  text-align: left;
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid var(--kj-border);
+}
+
+.shakir-table th {
+  background-color: var(--kj-bg);
+  color: var(--kj-navy-primary);
+  font-weight: 700;
+}

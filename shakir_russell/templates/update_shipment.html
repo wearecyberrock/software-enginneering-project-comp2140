@@ -1,17 +1,271 @@
+{# ============================================================================
+   INTRODUCTION — shakir_russell/templates/update_shipment.html
+   ============================================================================
+   Author:      Shakir Russell (Student ID: 620181663)
+   Feature:     F-06 Shipment Status & ETA Updating (SRS §2.3 & §3.2)
+
+   What this template does:
+     Provides the staff interface to:
+     1. Search for an existing shipment by Bill of Lading (BoL) number.
+     2. Change the shipment's transit status via a dropdown (SR-1).
+     3. Override the Estimated Time of Arrival (ETA) date (SR-2).
+     4. Add an optional delay reason when status is "Delayed".
+     5. Archive (soft-delete) an outdated shipment without losing history (SRS §3.2).
+     6. View all active shipments in a quick-select table.
+
+   What it pulls from the shared/group code:
+     - `shared/templates/base_staff.html`: Inherited via {% extends %} so this
+       page gets the Staff Portal navbar (links to F-01, F-02, F-03, F-05, F-06)
+       and `resources/design/theme.css`.
+     - `resources/design/theme.css`: Provides `.kj-card`, `.kj-input`,
+       `.kj-select`, `.kj-btn`, `.kj-badge`, and status badge colors.
+     - `/shakir/static/shipment_admin.css`: Our custom layout styles.
+     - `/shakir/static/eta_editor.js`: Our JavaScript file for client-side
+       ETA validation and toggling the Delay Reason input.
+     - `shakir_russell/routes.py`: Passes `search_bol`, `selected_shipment`,
+       `shipments`, `status_choices`, `badge_classes`, `error_message`, and
+       `success_message`.
+   ============================================================================ #}
+
+{# Inherit the shared internal staff layout from shared/templates/base_staff.html #}
 {% extends "base_staff.html" %}
+
+{# Set the browser tab title #}
 {% block title %}Update Shipment Status &amp; ETA (F-06) | Karmanjahni{% endblock %}
+
+{# Load Shakir's stylesheet #}
 {% block extra_css %}
 <link rel="stylesheet" href="/shakir/static/shipment_admin.css">
 {% endblock %}
 
+{# Main page content #}
 {% block content %}
+<!-- Top header card showing page title, logged-in staff user, and Logout button -->
 <section class="kj-card">
-  <h1>Shipment Status &amp; ETA Updating (F-06)</h1>
-  <p>Owner: <strong>Shakir Russell</strong> — Authorized staff updates from supplier notices.</p>
-  <!-- TODO (Shakir): Build BoL lookup, status dropdown (In Transit/Delayed/Arrived), and ETA override form -->
+  <div class="shakir-header-row">
+    <div>
+      <h1>Shipment Status &amp; ETA Updating (F-06)</h1>
+      <p class="shakir-muted">
+        Update transit statuses and estimated arrival dates when notified by overseas suppliers.
+      </p>
+    </div>
+
+    <!-- Display the signed-in staff username/role from Flask `session` + Logout form -->
+    <div class="shakir-staff-bar">
+      <span class="shakir-staff-pill">
+        Signed in: <strong>{{ session.get('username', 'Staff') }}</strong>
+        ({{ session.get('user_role', 'staff') }})
+      </span>
+      <!-- Logout uses POST (not GET) so links cannot accidentally log staff out -->
+      <form method="POST" action="{{ url_for('shakir_bp.staff_logout') }}">
+        <button type="submit" class="kj-btn shakir-btn-outline">Log Out</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Show green confirmation banner when a shipment was updated or soft-deleted -->
+  {% if success_message %}
+  <div class="shakir-alert shakir-alert-success" role="status">
+    {{ success_message }}
+  </div>
+  {% endif %}
+
+  <!-- Show red error banner when BoL is not found or form validation fails -->
+  {% if error_message %}
+  <div class="shakir-alert shakir-alert-error" role="alert">
+    {{ error_message }}
+  </div>
+  {% endif %}
+
+  <!-- Step 1: Bill of Lading search form (uses HTTP GET so the URL shows ?bol=...) -->
+  <form method="GET" action="{{ url_for('shakir_bp.manage_shipments') }}" class="shakir-search-row">
+    <div class="shakir-field shakir-search-input">
+      <label for="search-bol">Find Shipment by Bill of Lading (BoL)</label>
+      <input
+        id="search-bol"
+        name="bol"
+        type="text"
+        class="kj-input"
+        value="{{ search_bol or '' }}"
+        placeholder="e.g. KJ-BOL-2026-001 or BOL-000"
+        required
+      >
+    </div>
+    <button type="submit" class="kj-btn kj-btn-primary">Search Shipment</button>
+  </form>
+</section>
+
+<!-- Step 2: Edit form — only shown after a valid active shipment is loaded -->
+{% if selected_shipment %}
+<section class="kj-card">
+  <!-- Summary header showing the selected vehicle, BoL, and current status badge -->
+  <div class="shakir-edit-header">
+    <div>
+      <h2>
+        Edit Shipment: {{ selected_shipment.bill_of_lading }}
+      </h2>
+      <!-- Show the linked Vehicle details pulled via SQLAlchemy relationship `selected_shipment.vehicle` -->
+      {% if selected_shipment.vehicle %}
+      <p class="shakir-muted">
+        Vehicle: <strong>{{ selected_shipment.vehicle.year }} {{ selected_shipment.vehicle.make }} {{ selected_shipment.vehicle.model }}</strong>
+        {% if selected_shipment.vehicle.color %} &bull; {{ selected_shipment.vehicle.color }}{% endif %}
+      </p>
+      {% endif %}
+    </div>
+
+    <!-- Current status badge using classes from shared resources/design/theme.css -->
+    <span class="kj-badge {{ badge_classes.get(selected_shipment.status, '') }}">
+      {{ selected_shipment.status }}
+    </span>
+  </div>
+
+  <!-- Update form posting directly to /shipments/update/<bol> -->
+  <form
+    id="shipment-update-form"
+    method="POST"
+    action="{{ url_for('shakir_bp.update_shipment_by_bol', bol=selected_shipment.bill_of_lading) }}"
+    class="shakir-form"
+  >
+    <!-- Hidden field also keeps the BoL available for JavaScript or fallback POSTs -->
+    <input type="hidden" name="bill_of_lading" value="{{ selected_shipment.bill_of_lading }}">
+
+    <div class="shakir-form-grid">
+      <!-- F-06 SR-1: Transit Status Dropdown -->
+      <div class="shakir-field">
+        <label for="status-select">Transit Status</label>
+        <select id="status-select" name="status" class="kj-select" required>
+          <!-- Loop over STATUS_CHOICES passed from routes.py -->
+          {% for status_option in status_choices %}
+          <option
+            value="{{ status_option }}"
+            {% if selected_shipment.status == status_option %}selected{% endif %}
+          >
+            {{ status_option }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- F-06 SR-2: Estimated Arrival Date (ETA) Override -->
+      <div class="shakir-field">
+        <label for="eta-input">Estimated Arrival Date (ETA)</label>
+        <!-- HTML date input outputs standard YYYY-MM-DD format -->
+        <input
+          id="eta-input"
+          name="eta_date"
+          type="date"
+          class="kj-input"
+          value="{{ selected_shipment.eta_date.isoformat() if selected_shipment.eta_date else '' }}"
+        >
+        <small class="shakir-help">Leave unchanged or choose a new date to override the current ETA.</small>
+      </div>
+    </div>
+
+    <!-- Optional Delay Reason field — eta_editor.js shows/highlights this when "Delayed" is selected -->
+    <div id="delay-reason-group" class="shakir-field">
+      <label for="delay-reason-input">Delay Reason (optional — used when status is Delayed)</label>
+      <input
+        id="delay-reason-input"
+        name="delay_reason"
+        type="text"
+        maxlength="255"
+        class="kj-input"
+        value="{{ selected_shipment.delay_reason or '' }}"
+        placeholder="e.g. Tropical storm or port congestion in Kingston"
+      >
+    </div>
+
+    <!-- Client-side validation error message container filled by eta_editor.js if needed -->
+    <div id="client-error-box" class="shakir-alert shakir-alert-error" style="display: none;" role="alert"></div>
+
+    <!-- Action buttons: Save changes -->
+    <div class="shakir-actions">
+      <button type="submit" class="kj-btn kj-btn-primary">
+        Save Shipment Update
+      </button>
+      <a href="{{ url_for('shakir_bp.manage_shipments') }}" class="kj-btn shakir-btn-outline">
+        Cancel
+      </a>
+    </div>
+  </form>
+
+  <!-- SRS §3.2 Soft Delete Form: hides outdated record without permanently deleting DB history -->
+  <div class="shakir-danger-zone">
+    <div>
+      <strong>Archive (Soft-Delete) Shipment</strong>
+      <p class="shakir-muted">
+        Hides this shipment from active tracking searches without permanently erasing database history.
+      </p>
+    </div>
+    <form
+      id="soft-delete-form"
+      method="POST"
+      action="{{ url_for('shakir_bp.delete_shipment_by_bol', bol=selected_shipment.bill_of_lading) }}"
+    >
+      <button type="submit" class="kj-btn shakir-btn-danger">
+        Archive Shipment
+      </button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+<!-- Step 3: Table of all active shipments so staff can quickly pick one to edit -->
+<section class="kj-card">
+  <h2>Active Shipments</h2>
+  {% if shipments %}
+  <div class="shakir-table-wrap">
+    <table class="shakir-table">
+      <thead>
+        <tr>
+          <th>Bill of Lading</th>
+          <th>Vehicle</th>
+          <th>Status</th>
+          <th>Current ETA</th>
+          <th>Delay Note</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Loop through each active Shipment row passed by routes.py -->
+        {% for item in shipments %}
+        <tr>
+          <td><strong>{{ item.bill_of_lading }}</strong></td>
+          <td>
+            {% if item.vehicle %}
+              {{ item.vehicle.year }} {{ item.vehicle.make }} {{ item.vehicle.model }}
+            {% else %}
+              N/A
+            {% endif %}
+          </td>
+          <td>
+            <span class="kj-badge {{ badge_classes.get(item.status, '') }}">
+              {{ item.status }}
+            </span>
+          </td>
+          <td>{{ item.eta_date.isoformat() if item.eta_date else 'Not set' }}</td>
+          <td>{{ item.delay_reason or '—' }}</td>
+          <td>
+            <!-- Clicking Edit reloads /shipments/manage with ?bol=<bill_of_lading> -->
+            <a
+              href="{{ url_for('shakir_bp.manage_shipments', bol=item.bill_of_lading) }}"
+              class="kj-btn kj-btn-gold shakir-btn-sm"
+            >
+              Edit
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="shakir-muted">No active shipments found in the database yet.</p>
+  {% endif %}
 </section>
 {% endblock %}
 
+{# Load Shakir's JavaScript file inside the `extra_js` block from base_staff.html #}
 {% block extra_js %}
 <script src="/shakir/static/eta_editor.js"></script>
 {% endblock %}

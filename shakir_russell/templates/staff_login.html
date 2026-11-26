@@ -1,13 +1,88 @@
+{# ============================================================================
+   INTRODUCTION — shakir_russell/templates/staff_login.html
+   ============================================================================
+   Author:      Shakir Russell (Student ID: 620181663)
+   Feature:     Staff Portal Login (SRS §3.2 Security & RBAC)
+
+   What this template does:
+     Shows the login form where authorized Karmanjahni staff (Owner,
+     Purchasing Manager, Internal Staff, Sales Staff) enter their username
+     and password to access internal pages.
+
+   What it pulls from the shared/group code:
+     - `shared/templates/base_public.html`: Inherited via {% extends %} so
+       the page automatically gets the Karmanjahni navbar, logo, footer,
+       and `resources/design/theme.css`.
+     - `/shakir/static/shipment_admin.css`: Our own CSS file for extra
+       form and alert styling.
+     - `shakir_russell/routes.py` (`staff_login` route): Passes the template
+       variables `error_message` and `entered_username` when rendering.
+   ============================================================================ #}
+
+{# Inherit the shared public layout (header, nav, footer, and global theme.css) #}
 {% extends "base_public.html" %}
+
+{# Set the browser tab title using the `title` block from base_public.html #}
 {% block title %}Staff Login | Karmanjahni Company Limited{% endblock %}
+
+{# Load Shakir's custom stylesheet inside the `extra_css` block from base_public.html #}
 {% block extra_css %}
 <link rel="stylesheet" href="/shakir/static/shipment_admin.css">
 {% endblock %}
 
+{# Main page content injected into the `content` block of base_public.html #}
 {% block content %}
-<section class="kj-card" style="max-width: 440px; margin: 2rem auto;">
+<!-- Card container using `.kj-card` from shared resources/design/theme.css -->
+<section class="kj-card shakir-login-card">
+  <!-- Page heading -->
   <h1>Staff Portal Login</h1>
-  <p>Authorized Karmanjahni personnel only.</p>
-  <!-- TODO (Shakir): Implement staff username/password login form -->
+  <!-- Short instruction for staff users -->
+  <p class="shakir-muted">Authorized Karmanjahni personnel only. Sign in to manage shipments and inventory.</p>
+
+  <!-- Show a red error box if `error_message` was passed by routes.py (e.g. wrong password) -->
+  {% if error_message %}
+  <div class="shakir-alert shakir-alert-error" role="alert">
+    {{ error_message }}
+  </div>
+  {% endif %}
+
+  <!-- HTML form that sends username & password via HTTP POST to /staff/login -->
+  <form method="POST" action="{{ url_for('shakir_bp.staff_login') }}" class="shakir-form">
+    <!-- Username input group -->
+    <div class="shakir-field">
+      <label for="username">Username</label>
+      <!-- Keep `entered_username` filled in if the user mistyped their password -->
+      <input
+        id="username"
+        name="username"
+        type="text"
+        class="kj-input"
+        value="{{ entered_username or '' }}"
+        placeholder="e.g. purchasing_mgr"
+        autocomplete="username"
+        required
+      >
+    </div>
+
+    <!-- Password input group -->
+    <div class="shakir-field">
+      <label for="password">Password</label>
+      <!-- `type="password"` hides typed characters on screen for security -->
+      <input
+        id="password"
+        name="password"
+        type="password"
+        class="kj-input"
+        placeholder="Enter your password"
+        autocomplete="current-password"
+        required
+      >
+    </div>
+
+    <!-- Submit button styled with `.kj-btn` and `.kj-btn-primary` from shared theme.css -->
+    <button type="submit" class="kj-btn kj-btn-primary shakir-btn-full">
+      Sign In to Staff Portal
+    </button>
+  </form>
 </section>
 {% endblock %}
