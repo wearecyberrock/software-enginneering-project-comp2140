@@ -7,44 +7,70 @@ local development (`flask --app app run`) or pytest tests.
 """
 
 import os
+import traceback
 
-# Cloudflare Workers has a writable /tmp filesystem inside the Pyodide sandbox.
-# Default to /tmp for SQLite and uploaded photos if no external DATABASE_URL is set.
-os.environ.setdefault("DATABASE_URL", "sqlite:////tmp/karmanjahni.db")
+from sqlalchemy.pool import StaticPool
+
+# Default to in-memory SQLite on Cloudflare Workers so there are zero filesystem
+# permission or /tmp-reset issues between deploy snapshot and runtime requests.
+os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 os.environ.setdefault("UPLOAD_FOLDER", "/tmp/uploads")
 
-from workers import wsgi  # noqa: E402
 from werkzeug.security import generate_password_hash  # noqa: E402
 
 from app import create_app  # noqa: E402
+from shared.config import Config  # noqa: E402
 from shared.database import db  # noqa: E402
 from shared.demo_data import seed_demo  # noqa: E402
+from shared.duty_schedule import initialize_inventory  # noqa: E402
 from shared.models import User  # noqa: E402
 
-app = create_app()
+
+class CloudflareConfig(Config):
+    """Worker config that keeps one shared in-memory SQLite DB per Worker isolate."""
+
+    if Config.SQLALCHEMY_DATABASE_URI == "sqlite:///:memory:":
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "poolclass": StaticPool,
+            "connect_args": {"check_same_thread": False},
+        }
+
+
+app = create_app(CloudflareConfig)
 _seeded = False
 
 
 @app.before_request
 def _ensure_demo_seeded():
-    """Seed demo vehicles, FX rates, duty tiers, and staff users on the first request.
+    """Ensure tables, duty schedule, and demo records exist on the first request.
 
-    Done lazily (not at top-level import) so Cloudflare's deploy-time memory snapshot
-    never hits entropy/PRNG restrictions from password hashing or token generation.
+    Runs lazily on the first HTTP request (not at top-level import) so Cloudflare's
+    deploy-time memory snapshot never hits entropy/PRNG restrictions.
     """
     global _seeded
     if _seeded:
         return
-    created_accounts = seed_demo()
-    demo_password = os.environ.get("DEMO_PASSWORD", "Karmanjahni2026!")
-    if created_accounts:
-        for username, _ in created_accounts:
-            user = User.query.filter_by(username=username).first()
-            if user is not None:
-                user.password_hash = generate_password_hash(demo_password)
-        db.session.commit()
-    _seeded = True
+    try:
+        initialize_inventory()
+        created_accounts = seed_demo()
+        demo_password = os.environ.get("DEMO_PASSWORD", "Karmanjahni2026!")
+        if created_accounts:
+            for username, _ in created_accounts:
+                user = User.query.filter_by(username=username).first()
+                if user is not None:
+                    user.password_hash = generate_password_hash(demo_password)
+            db.session.commit()
+        _seeded = True
+    except Exception:
+        print(traceback.format_exc())
+        raise
 
 
 # Expose the Flask WSGI app as the Cloudflare Worker Default entrypoint
-Default = wsgi.entrypoint(app)
+try:
+    from workers import wsgi
+
+    Default = wsgi.entrypoint(app)
+except ModuleNotFoundError:
+    # Allows importing worker.py locally outside Cloudflare's Pyodide runtime for testing
+    Default = None
