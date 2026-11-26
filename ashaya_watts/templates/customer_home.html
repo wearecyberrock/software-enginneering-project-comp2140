@@ -1,6 +1,7 @@
-```html
 {% extends "base_public.html" %}
-{% block title %}Browse Vehicles | Karmanjahni Company Limited{% endblock %}
+{% set heading = "Upcoming Arrivals" if section == "upcoming" else "Browse Inventory" %}
+{% set staff_specs = session.get("user_role") in ("sales_staff", "owner") %}
+{% block title %}{{ heading }} | Karmanjahni Company Limited{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="/ashaya/static/storefront.css">
@@ -8,26 +9,32 @@
 
 {% block content %}
 <section class="kj-card">
-  <h1>Find Your Next Vehicle</h1>
+  <h1>{{ heading }}</h1>
 
-  <p>Search available and upcoming imports from Japan, the US, Singapore, Thailand, and Europe.</p>
 
   <!-- Search for vehicles by make or model -->
-  <form method="get" action="{{ url_for('ashaya_bp.customer_home') }}">
+  <form class="inventory-search" method="get" action="{{ request.path }}">
     <input class="kj-input" type="search" name="q"
            value="{{ query }}"
            placeholder="Search by make or model (e.g. Tacoma Pickup, Honda Fit)..."
            aria-label="Search by make or model">
 
-    <button class="kj-btn kj-btn-gold" type="submit"
-            style="margin-top: 0.75rem;">
+    <select aria-label="Transmission" name="transmission" class="kj-select">
+        <option value="">All transmissions</option>
+        {% for kind in ("manual", "automatic") %}
+        <option value="{{ kind }}" {% if request.args.get("transmission") == kind %}selected{% endif %}>{{ kind|capitalize }}</option>
+        {% endfor %}
+      </select>
+
+    <button class="kj-btn kj-btn-gold" type="submit">
       Search Inventory
     </button>
   </form>
 
-  <h2>Vehicle Inventory</h2>
+
 
   <!-- Display matching vehicles -->
+  <div id="vehicle-results" data-section="{{ section }}" data-detail-prefix="{{ '/tablet/vehicle/' if staff_specs else '/vehicle/' }}">
   {% if vehicles %}
     {% for vehicle in vehicles %}
       <div class="kj-card">
@@ -39,6 +46,7 @@
 
         <h3>{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h3>
 
+        <p><strong>Transmission:</strong> {{ (vehicle.transmission or "Not recorded")|capitalize }}</p>
         <p><strong>Color:</strong> {{ vehicle.color }}</p>
         <p><strong>Mileage:</strong> {{ vehicle.mileage_km }} km</p>
         <p><strong>Status:</strong> {{ vehicle.availability }}</p>
@@ -52,9 +60,9 @@
           {% endif %}
         {% endif %}
 
-        <!-- F-05 estimated JMD price integration pending -->
+        <p>Estimated price: {{ "J${:,.2f}".format(vehicle.estimated_jmd_price|float) if vehicle.estimated_jmd_price else "Unavailable" }}</p>
         <a class="kj-btn kj-btn-gold"
-           href="{{ url_for('ashaya_bp.customer_vehicle_detail', vehicle_id=vehicle.id) }}">
+           href="{{ url_for('amanda_bp.vehicle_profile' if staff_specs else 'ashaya_bp.customer_vehicle_detail', vehicle_id=vehicle.id) }}">
           View Details
         </a>
       </div>
@@ -66,11 +74,13 @@
     {% elif query.strip() %}
       <p>No matching vehicles found</p>
     {% else %}
-      <p>No vehicles are currently available in the inventory.</p>
+      <p>{{ "No upcoming arrivals." if section == "upcoming" else "No vehicles are currently available in the inventory." }}</p>
     {% endif %}
   {% endif %}
+</div>
 </section>
 {% endblock %}
-```
 
 
+
+{% block extra_js %}<script src="{{ url_for('ashaya_bp.static', filename='search.js') }}"></script>{% endblock %}

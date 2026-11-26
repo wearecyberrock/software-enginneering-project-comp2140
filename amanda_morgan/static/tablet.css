@@ -57,7 +57,7 @@
   display: block;
   width: 100%;
   aspect-ratio: 16 / 10;
-  object-fit: cover;
+  object-fit: contain;
   background: var(--kj-border);
 }
 .vehicle-card-body { padding: 0.9rem 1rem 1rem; }
@@ -87,9 +87,9 @@
 .profile-header h1 { margin-bottom: 0.2rem; }
 .profile-header .tablet-sub { margin-bottom: 0; }
 
-.profile-layout { display: grid; gap: 1.25rem; grid-template-columns: 1fr; align-items: start; }
+.profile-layout { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
 @media (min-width: 900px) {
-  .profile-layout { grid-template-columns: 1.3fr 1fr; }
+  .profile-layout { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
 }
 
 /* Swipeable gallery: native scroll-snap, so a finger swipe works with no extra code */
@@ -102,7 +102,7 @@
   scrollbar-width: none;
 }
 .gallery-track::-webkit-scrollbar { display: none; }
-.gallery-slide { flex: 0 0 100%; margin: 0; scroll-snap-align: center; }
+.gallery-slide { min-width: 0; flex: 0 0 100%; margin: 0; scroll-snap-align: center; }
 .gallery-slide img {
   display: block;
   width: 100%;
@@ -153,7 +153,7 @@
   cursor: pointer;
   touch-action: manipulation;
 }
-.gallery-thumb img { display: block; width: 96px; height: 64px; object-fit: cover; border-radius: 7px; }
+.gallery-thumb img { display: block; width: 96px; height: 64px; object-fit: contain; border-radius: 7px; }
 .gallery-thumb.is-active { border-color: var(--kj-gold-accent); }
 
 /* Full-screen mode (tap a photo or the expand button) */
@@ -161,7 +161,7 @@
   position: fixed; inset: 0; z-index: 1000; border-radius: 0; background: #000;
   display: flex; flex-direction: column; justify-content: center;
 }
-.gallery.is-fullscreen .gallery-slide img { aspect-ratio: auto; height: 100vh; max-height: 100vh; cursor: zoom-out; }
+.gallery.is-fullscreen .gallery-slide img { aspect-ratio: auto; height: 100vh; height: 100dvh; max-height: 100%; cursor: zoom-out; }
 
 /* Vehicle with no photos */
 .no-photos {

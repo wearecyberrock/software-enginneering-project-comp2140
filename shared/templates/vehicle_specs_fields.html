@@ -1,0 +1,21 @@
+{% from "vehicle_fields.html" import text_input, select_input, field_error with context %}
+    <div class="entry-grid">
+      {{ text_input("make", "Make", required=True, maxlength=80, placeholder="e.g. Toyota") }}
+      {{ text_input("model", "Model", required=True, maxlength=100, placeholder="e.g. Hilux") }}
+      {{ text_input("year", "Year", required=True, type="number", inputmode="numeric", placeholder="e.g. 2021") }}
+      {{ select_input("category", "Category", categories, default="car") }}
+      {{ select_input("fuel_type", "Fuel type", [("petrol","Petrol"),("diesel","Diesel")], blank="Select fuel type") }}
+      {{ select_input("transmission", "Transmission", [("manual","Manual"),("automatic","Automatic")], blank="Select transmission") }}
+      {{ text_input("weight_kg", "Weight (kg; required for pickups and trucks, unladen for pickups)", type="number", inputmode="numeric") }}
+      {{ text_input("color", "Colour", maxlength=50, placeholder="e.g. Wine Red") }}
+      {{ text_input("mileage_km", "Mileage (km)", type="number", inputmode="numeric", placeholder="e.g. 42000") }}
+      {{ text_input("engine_cc", "Engine size (cc)", required=True, type="number", inputmode="numeric", placeholder="e.g. 2800") }}
+      {{ select_input("origin_country", "Country of origin", countries, blank="Choose a country") }}
+    </div>
+    <div class="form-field" data-field="features">
+      <label for="features">Features</label>
+      <textarea class="kj-input{% if errors.get('features') %} field-invalid{% endif %}" id="features" name="features"
+                rows="2" maxlength="1000" placeholder="e.g. Sunroof, Keyless Entry, Alloy Rims">{{ form.get('features', '') }}</textarea>
+      <p class="hint">Separate features with commas.</p>
+      {{ field_error("features") }}
+    </div>

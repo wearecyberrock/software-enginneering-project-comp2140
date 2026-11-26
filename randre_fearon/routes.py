@@ -20,12 +20,11 @@ from randre_fearon.photo_upload import (
 from randre_fearon.tracking_service import build_tracking_view, find_shipment_by_bol
 from shared.validators import is_valid_bill_of_lading
 
-# NOTE: /tracking/ and /inventory/add are staff routes (purchasing_manager / owner). Per
-# integration/fuse_checklist.md the @role_required decorator from shared/auth.py is added to
-# them at fusion. Do NOT add it to vehicle_photo(): photos also appear on the public site (F-04).
+from shared.auth import role_required
 
 
 @randre_bp.route("/tracking/", methods=["GET"])
+@role_required("purchasing_manager", "internal_staff")
 def track_shipment():
     """F-01: Render Bill of Lading search page and tracking results."""
     searched = "bol" in request.args  # False on the very first visit, so no error is shown yet
@@ -41,6 +40,7 @@ def track_shipment():
 
 
 @randre_bp.route("/inventory/add", methods=["GET", "POST"])
+@role_required("purchasing_manager")
 def add_vehicle():
     """F-02: Render and handle manual vehicle logging form (deposit-paid required)."""
     form, errors, photos_lost = {}, {}, False

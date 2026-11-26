@@ -29,6 +29,9 @@ class Vehicle(db.Model):
     year = db.Column(db.Integer, nullable=False)
     # Categories: car | truck | bus | heavy_equipment | parts
     category = db.Column(db.String(40), nullable=False, default="car")
+    fuel_type = db.Column(db.String(10))
+    transmission = db.Column(db.String(12))
+    weight_kg = db.Column(db.Integer)
     color = db.Column(db.String(50), nullable=True)
     mileage_km = db.Column(db.Integer, nullable=True)
     engine_cc = db.Column(db.Integer, nullable=False)
@@ -47,6 +50,12 @@ class Vehicle(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     shipment = db.relationship("Shipment", back_populates="vehicle", uselist=False)
+
+    @classmethod
+    def active_inventory(cls):
+        return cls.query.filter_by(is_deleted=False, deposit_paid=True).filter(
+            ~cls.shipment.has(Shipment.is_deleted.is_(True))
+        )
 
 
 class Shipment(db.Model):
@@ -91,11 +100,12 @@ class FxRate(db.Model):
 class DutyTier(db.Model):
     """Updatable government duty percentages by engine CC & category (SRS F-05 & §3.3)."""
 
-    __tablename__ = "duty_tiers"
+    __tablename__ = "fuel_duty_tiers"
 
     id = db.Column(db.Integer, primary_key=True)
     label = db.Column(db.String(80), nullable=False)
     vehicle_category = db.Column(db.String(40), nullable=False, default="car")
-    min_cc = db.Column(db.Integer, nullable=False, default=0)
-    max_cc = db.Column(db.Integer, nullable=True)  # None = no upper bound
-    duty_percentage = db.Column(db.Numeric(6, 2), nullable=False)
+    lower_bound = db.Column(db.Integer, nullable=False, default=0)
+    upper_bound = db.Column(db.Integer, nullable=True)  # None = no upper bound
+    diesel_rate = db.Column(db.Numeric(6, 2), nullable=False)
+    petrol_rate = db.Column(db.Numeric(6, 2), nullable=False)

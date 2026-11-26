@@ -18,8 +18,15 @@
     </a>
     <nav class="kj-nav-links">
       <a href="/">Browse Inventory</a>
-      <a href="/browse">Upcoming Arrivals</a>
+      <a href="/upcoming-arrivals">Upcoming Arrivals</a>
+      {% if session.get('user_id') is none %}
       <a href="/staff/login">Staff Login</a>
+      {% else %}
+      {% if session.get('user_role') != 'sales_staff' %}
+      <a href="/shipments/manage">Staff Portal</a>
+      {% endif %}
+      <form method="post" action="/staff/logout"><button type="submit" class="kj-btn">Sign out</button></form>
+      {% endif %}
     </nav>
   </header>
 

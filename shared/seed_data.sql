@@ -7,13 +7,6 @@ INSERT OR IGNORE INTO fx_rates (currency_code, rate_to_jmd) VALUES
   ('THB', 4.5500),
   ('EUR', 171.0000);
 
-INSERT OR IGNORE INTO duty_tiers (id, label, vehicle_category, min_cc, max_cc, duty_percentage) VALUES
-  (1, 'Small Engine Car (<= 1500cc)', 'car', 0, 1500, 45.00),
-  (2, 'Mid Engine Car (1501cc - 2000cc)', 'car', 1501, 2000, 60.00),
-  (3, 'Large Engine Car (> 2000cc)', 'car', 2001, NULL, 80.00),
-  (4, 'Pickup / Light Truck', 'truck', 0, NULL, 55.00),
-  (5, 'Heavy Farm & Service Equipment', 'heavy_equipment', 0, NULL, 25.00);
-
 INSERT OR IGNORE INTO vehicles
   (id, make, model, year, category, color, mileage_km, engine_cc, features, origin_country, photo_urls, base_foreign_price, base_currency, deposit_paid, is_deleted)
 VALUES

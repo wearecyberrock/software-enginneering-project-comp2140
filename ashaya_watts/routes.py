@@ -9,9 +9,18 @@ from ashaya_watts.public_catalog_service import search_public_inventory, get_pub
 @ashaya_bp.route("/browse", methods=["GET"])
 def customer_home():
     """F-04: Public dealership landing page with make/model search."""
+    return inventory_page("available")
+
+
+@ashaya_bp.get("/upcoming-arrivals")
+def upcoming_arrivals():
+    return inventory_page("upcoming")
+
+
+def inventory_page(section):
     query = request.args.get("q", "")
-    vehicles = search_public_inventory(query)
-    return render_template("customer_home.html", query=query, vehicles=vehicles)
+    vehicles = search_public_inventory(query, section, request.args.get("transmission", ""))
+    return render_template("customer_home.html", query=query, vehicles=vehicles, section=section)
 
 
 @ashaya_bp.route("/vehicle/<int:vehicle_id>", methods=["GET"])
@@ -27,4 +36,7 @@ def customer_vehicle_detail(vehicle_id: int):
 def api_public_vehicles():
     """F-04: Public JSON search endpoint (strictly sanitized fields only)."""
     query = request.args.get("q", "")
-    return jsonify(search_public_inventory(query))
+    section = request.args.get("section")
+    if section not in (None, "available", "upcoming"):
+        abort(400)
+    return jsonify(search_public_inventory(query, section, request.args.get("transmission", "")))

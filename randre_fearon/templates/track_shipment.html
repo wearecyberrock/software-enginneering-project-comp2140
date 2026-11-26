@@ -1,18 +1,18 @@
 {% extends "base_staff.html" %}
-{% block title %}Track Shipment (F-01) | Karmanjahni{% endblock %}
+{% block title %}Track Shipment | Karmanjahni{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="/randre/static/tracking.css">
 {% endblock %}
 
 {% block content %}
 <section class="kj-card">
-  <h1>Shipment &amp; Inventory Tracking (F-01)</h1>
-  <p class="page-sub">Owner: <strong>Randre Fearon</strong> &mdash; Search by Bill of Lading (BoL) number.</p>
+  <h1>Shipment &amp; Inventory Tracking</h1>
+  <p class="page-sub">Search by Bill of Lading (BoL) number.</p>
 
   <form class="tracking-form" method="get" action="/tracking/" role="search">
     <label for="bol-input" class="sr-only">Bill of Lading number</label>
     <input id="bol-input" class="kj-input" type="text" name="bol" value="{{ bol }}"
-           placeholder="Enter Bill of Lading (e.g. KJ-BOL-2026-001)" maxlength="64" autocomplete="off">
+           placeholder="BOL-000" maxlength="64" autocomplete="off">
     <button class="kj-btn kj-btn-primary" type="submit">Search Shipment</button>
   </form>
 </section>

@@ -16,7 +16,7 @@ except ImportError:  # pragma: no cover - only if F-05's folder is missing from 
 
 def _active_vehicles():
     """Vehicles that are live: deposit paid (F-02 gate) and not soft-deleted (SRS 3.2)."""
-    return Vehicle.query.filter_by(is_deleted=False, deposit_paid=True)
+    return Vehicle.active_inventory()
 
 
 def _estimated_price(vehicle):

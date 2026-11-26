@@ -1,7 +1,7 @@
 {% extends "base_staff.html" %}
 
 {% block title %}
-Manage FX &amp; Duty Rates (F-05) | Karmanjahni
+Manage FX &amp; Duty Rates | Karmanjahni
 {% endblock %}
 
 {% block extra_css %}
@@ -13,7 +13,7 @@ Manage FX &amp; Duty Rates (F-05) | Karmanjahni
 
 <section class="kj-card pricing-manager">
 
-    <h1>Dynamic Pricing Variables (F-05)</h1>
+    <h1>Dynamic Pricing Variables</h1>
 
     <p>
         Manage foreign exchange rates and vehicle duty percentages
@@ -103,92 +103,30 @@ Manage FX &amp; Duty Rates (F-05) | Karmanjahni
 
     <h2>Vehicle Duty Percentages</h2>
 
-    <p>
-        Duty percentages are applied according to vehicle
-        category and engine capacity.
-    </p>
-
     <div class="pricing-table-wrapper">
-        <table class="pricing-table">
-            <thead>
-                <tr>
-                    <th>Duty Tier</th>
-                    <th>Category</th>
-                    <th>Minimum CC</th>
-                    <th>Maximum CC</th>
-                    <th>Current Duty</th>
-                    <th>Update Duty</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                {% for tier in duty_tiers %}
-                <tr>
-                    <td>{{ tier.label }}</td>
-
-                    <td>
-                        {{ tier.vehicle_category
-                           |replace('_', ' ')|title }}
-                    </td>
-
-                    <td>{{ tier.min_cc }}</td>
-
-                    <td>
-                        {% if tier.max_cc is none %}
-                            Unlimited
-                        {% else %}
-                            {{ tier.max_cc }}
-                        {% endif %}
-                    </td>
-
-                    <td>{{ tier.duty_percentage }}%</td>
-
-                    <td>
-                        <form method="POST"
-                              action="{{ url_for('tyrone_bp.manage_rates') }}"
-                              class="pricing-form">
-
-                            <input type="hidden"
-                                   name="csrf_token"
-                                   value="{{ csrf_token }}">
-
-                            <input type="hidden"
-                                   name="action"
-                                   value="update_duty">
-
-                            <input type="hidden"
-                                   name="tier_id"
-                                   value="{{ tier.id }}">
-
-                            <input type="number"
-                                   name="duty_percentage"
-                                   aria-label="New duty percentage for {{ tier.label }}"
-                                   value="{{ tier.duty_percentage }}"
-                                   min="0"
-                                   max="9999.99"
-                                   step="0.01"
-                                   required>
-
-                            <button type="submit"
-                                    class="pricing-button">
-                                Update
-                            </button>
-
-                        </form>
-                    </td>
-                </tr>
-
-                {% else %}
-                <tr>
-                    <td colspan="6">
-                        No duty tiers configured.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+      <table class="pricing-table">
+        <thead><tr><th>Category</th><th>Duty tier</th><th>Petrol rate</th><th>Diesel rate</th><th>Save</th></tr></thead>
+        <tbody>
+        {% for tier in duty_tiers %}
+          <tr>
+            <td>{{ {"car":"Car / SUV","bus":"Bus","pickup":"Pickup","truck":"Truck","heavy_equipment":"Heavy equipment"}[tier.vehicle_category] }}</td>
+            <td>{{ tier.label }}</td>
+            {% for fuel in ("petrol", "diesel") %}
+            <td><input form="duty-{{ tier.id }}" aria-label="{{ tier.label }} {{ fuel }} percentage"
+                 type="number" name="{{ fuel }}_rate" min="0" max="9999.99" step="0.01"
+                 value="{{ "%.2f"|format(tier|attr(fuel ~ "_rate")) }}" required> %</td>
+            {% endfor %}
+            <td><form method="post" id="duty-{{ tier.id }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="action" value="update_duty">
+              <input type="hidden" name="tier_id" value="{{ tier.id }}">
+              <button class="pricing-button">Update</button>
+            </form></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
-
     <div class="pricing-note">
         Changes to exchange rates and duty percentages
         will be reflected in subsequent vehicle price estimates.

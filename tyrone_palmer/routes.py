@@ -31,11 +31,7 @@ from shared.auth import role_required
 def pricing_estimate(vehicle_id: int):
     """F-05: Return a public-safe estimated JMD price."""
 
-    vehicle = Vehicle.query.filter_by(
-        id=vehicle_id,
-        is_deleted=False,
-        deposit_paid=True,
-    ).first()
+    vehicle = Vehicle.active_inventory().filter_by(id=vehicle_id).first()
 
     if vehicle is None:
         abort(404)
@@ -104,11 +100,7 @@ def manage_rates():
 
                 tier_id = int(request.form.get("tier_id", ""))
 
-                new_percentage = request.form.get(
-                    "duty_percentage"
-                )
-
-                update_duty_tier(tier_id, new_percentage)
+                update_duty_tier(tier_id, request.form.get("petrol_rate"), request.form.get("diesel_rate"))
 
             else:
                 raise ValueError("Invalid update action.")

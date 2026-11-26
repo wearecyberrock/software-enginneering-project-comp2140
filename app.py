@@ -8,7 +8,9 @@ Registers all 5 team member Blueprints and serves shared design resources.
 import os
 from flask import Flask, send_from_directory
 from shared.config import Config
+from shared.demo_data import seed_demo_command
 from shared.database import db
+from shared.duty_schedule import initialize_inventory, classify_vehicle
 
 # Import each team member's isolated Blueprint
 from randre_fearon import randre_bp
@@ -26,12 +28,14 @@ def create_app(config_object=Config):
         template_folder=os.path.join(base_dir, "shared", "templates"),
     )
     app.config.from_object(config_object)
+    app.cli.add_command(seed_demo_command)
+    app.cli.add_command(classify_vehicle)
 
     # Initialize shared database
     db.init_app(app)
     with app.app_context():
         import shared.models  # noqa: F401
-        db.create_all()
+        initialize_inventory()
 
     # Serve shared design resources (theme.css, logo, tokens) at /resources/<path>
     resources_dir = os.path.join(base_dir, "resources")

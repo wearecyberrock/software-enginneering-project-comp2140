@@ -11,15 +11,18 @@
 
   <!-- Display vehicle photos -->
   {% if vehicle.photo_urls %}
+    <div class="vehicle-photos">
     {% for photo in vehicle.photo_urls %}
       <img src="{{ photo }}"
-           alt="{{ vehicle.make }} {{ vehicle.model }}"
-           width="300">
+           alt="{{ vehicle.make }} {{ vehicle.model }} — photo {{ loop.index }}">
     {% endfor %}
+    </div>
   {% endif %}
 
   <!-- Display vehicle specifications -->
   <h2>Vehicle Specifications</h2>
+  <p><strong>Transmission:</strong> {{ (vehicle.transmission or "Not recorded")|capitalize }}</p>
+  <p><strong>Fuel:</strong> {{ (vehicle.fuel_type or "Not recorded")|capitalize }}</p>
 
   <p><strong>Make:</strong> {{ vehicle.make }}</p>
   <p><strong>Model:</strong> {{ vehicle.model }}</p>
@@ -49,10 +52,10 @@
     {% endif %}
   {% endif %}
 
-  <!-- F-05 estimated JMD price integration pending -->
+  <p>Estimated price: {{ "J${:,.2f}".format(vehicle.estimated_jmd_price|float) if vehicle.estimated_jmd_price else "Unavailable" }}</p>
 
   <a class="kj-btn kj-btn-gold"
-     href="{{ url_for('ashaya_bp.customer_home') }}">
+     href="{{ url_for('ashaya_bp.upcoming_arrivals' if vehicle.availability == 'Upcoming Arrival' else 'ashaya_bp.customer_home') }}">
     Back to Inventory
   </a>
 

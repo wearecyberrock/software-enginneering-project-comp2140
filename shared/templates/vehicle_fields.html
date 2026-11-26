@@ -1,0 +1,32 @@
+{% macro field_error(name) %}
+  {% if errors.get(name) %}<p class="field-error" id="{{ name }}-error" role="alert">{{ errors[name] }}</p>{% endif %}
+{% endmacro %}
+
+{% macro text_input(name, label, required=False, type="text", placeholder="", maxlength="", inputmode="") %}
+<div class="form-field" data-field="{{ name }}">
+  <label for="{{ name }}">{{ label }}{% if required %} <span class="req" aria-hidden="true">*</span>{% endif %}</label>
+  <input class="kj-input{% if errors.get(name) %} field-invalid{% endif %}" id="{{ name }}" name="{{ name }}"
+         type="{{ type }}" value="{{ form.get(name, '') }}"
+         {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+         {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+         {% if inputmode %}inputmode="{{ inputmode }}"{% endif %}
+         {% if required %}data-required="true" data-label="{{ label }}"{% endif %}
+         {% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
+  {{ field_error(name) }}
+</div>
+{% endmacro %}
+
+{% macro select_input(name, label, options, default="", blank="") %}
+<div class="form-field" data-field="{{ name }}">
+  <label for="{{ name }}">{{ label }}</label>
+  <select class="kj-select{% if errors.get(name) %} field-invalid{% endif %}" id="{{ name }}" name="{{ name }}"
+          {% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
+    {% if blank %}<option value="">{{ blank }}</option>{% endif %}
+    {% for value, text in options %}
+    <option value="{{ value }}"{% if form.get(name, default) == value %} selected{% endif %}>{{ text }}</option>
+    {% endfor %}
+  </select>
+  {{ field_error(name) }}
+</div>
+{% endmacro %}
+

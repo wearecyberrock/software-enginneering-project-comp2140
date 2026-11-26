@@ -6,6 +6,8 @@ that has the same attributes as shared.models.Vehicle.
 
 import json
 
+from shared.photos import parse_photo_urls
+
 PLACEHOLDER_PHOTO = "/resources/design/assets/placeholder-vehicle.svg"
 
 CATEGORY_LABELS = {
@@ -25,24 +27,6 @@ STATUS_BADGE_CLASSES = {
 }
 
 NOT_RECORDED = "Not recorded"
-
-
-def parse_photo_urls(raw):
-    """photo_urls is stored as a JSON array of URLs; bad data must not crash the page."""
-    if not raw:
-        return []
-    if isinstance(raw, list):
-        data = raw
-    else:
-        try:
-            data = json.loads(raw)
-        except (TypeError, ValueError):
-            data = str(raw).split(",")
-    if isinstance(data, str):
-        data = [data]
-    if not isinstance(data, list):
-        return []
-    return [item.strip() for item in data if isinstance(item, str) and item.strip()]
 
 
 def parse_features(raw):
@@ -93,6 +77,8 @@ def build_vehicle_view(vehicle, estimated_price_jmd=None):
         "make": vehicle.make,
         "model": vehicle.model,
         "year": vehicle.year,
+        "fuel_type": getattr(vehicle, "fuel_type", None),
+        "transmission": getattr(vehicle, "transmission", None),
         "category": format_category(vehicle.category),
         "color": vehicle.color or NOT_RECORDED,
         "mileage_km": vehicle.mileage_km,

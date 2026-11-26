@@ -9,7 +9,7 @@
 </head>
 <body>
   <header class="kj-navbar">
-    <a href="/tracking/" class="kj-brand">
+    <a href="{{ '/browse' if session.get('user_role') == 'sales_staff' else '/tracking/' }}" class="kj-brand">
       <img src="/resources/design/assets/karmanjahni-logo.jpg" alt="Karmanjahni Company Limited Logo">
       <div>
         <span class="kj-brand-title">KARMANJAHNI STAFF PORTAL</span>
@@ -17,12 +17,20 @@
       </div>
     </a>
     <nav class="kj-nav-links">
-      <a href="/tracking/">Track BoL (F-01)</a>
-      <a href="/inventory/add">Log Vehicle (F-02)</a>
-      <a href="/tablet/">Sales Tablet (F-03)</a>
-      <a href="/admin/pricing-rates">Pricing Rates (F-05)</a>
-      <a href="/shipments/manage">Update ETA (F-06)</a>
-      <a href="/">Public Site</a>
+      {% if session.get("user_role") in ("owner", "purchasing_manager", "internal_staff") %}
+      <a href="/tracking/">Track Shipment</a>
+      {% endif %}
+      {% if session.get("user_role") in ("owner", "purchasing_manager") %}
+      <a href="/inventory/add">Add Vehicle</a>
+      {% endif %}
+      {% if session.get("user_role") in ("owner", "purchasing_manager") %}
+      <a href="/admin/pricing-rates">Pricing Rates</a>
+      {% endif %}
+      {% if session.get("user_role") in ("owner", "purchasing_manager", "internal_staff") %}
+      <a href="/shipments/manage">Manage Shipments</a>
+      {% endif %}
+      <a href="/">Home</a>
+      <form action="/staff/logout" method="post"><button class="kj-btn" type="submit">Sign out</button></form>
     </nav>
   </header>
 

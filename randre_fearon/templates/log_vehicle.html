@@ -1,46 +1,15 @@
 {% extends "base_staff.html" %}
-{% block title %}Log Vehicle Inventory (F-02) | Karmanjahni{% endblock %}
+{% block title %}Log Vehicle Inventory | Karmanjahni{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="/randre/static/tracking.css">
 {% endblock %}
 
 {% block content %}
 {# Small reusable pieces so every field is built the same way. #}
-{% macro field_error(name) %}
-  {% if errors.get(name) %}<p class="field-error" id="{{ name }}-error" role="alert">{{ errors[name] }}</p>{% endif %}
-{% endmacro %}
-
-{% macro text_input(name, label, required=False, type="text", placeholder="", maxlength="", inputmode="") %}
-<div class="form-field" data-field="{{ name }}">
-  <label for="{{ name }}">{{ label }}{% if required %} <span class="req" aria-hidden="true">*</span>{% endif %}</label>
-  <input class="kj-input{% if errors.get(name) %} field-invalid{% endif %}" id="{{ name }}" name="{{ name }}"
-         type="{{ type }}" value="{{ form.get(name, '') }}"
-         {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
-         {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
-         {% if inputmode %}inputmode="{{ inputmode }}"{% endif %}
-         {% if required %}data-required="true" data-label="{{ label }}"{% endif %}
-         {% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
-  {{ field_error(name) }}
-</div>
-{% endmacro %}
-
-{% macro select_input(name, label, options, default="", blank="") %}
-<div class="form-field" data-field="{{ name }}">
-  <label for="{{ name }}">{{ label }}</label>
-  <select class="kj-select{% if errors.get(name) %} field-invalid{% endif %}" id="{{ name }}" name="{{ name }}"
-          {% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
-    {% if blank %}<option value="">{{ blank }}</option>{% endif %}
-    {% for value, text in options %}
-    <option value="{{ value }}"{% if form.get(name, default) == value %} selected{% endif %}>{{ text }}</option>
-    {% endfor %}
-  </select>
-  {{ field_error(name) }}
-</div>
-{% endmacro %}
-
+{% from "vehicle_fields.html" import text_input, select_input, field_error with context %}
 <section class="kj-card">
-  <h1>Log New Vehicle Inventory (F-02)</h1>
-  <p class="page-sub">Owner: <strong>Randre Fearon</strong> &mdash; Purchasing Department Data Entry.
+  <h1>Log New Vehicle Inventory</h1>
+  <p class="page-sub">
     Fields marked <span class="req">*</span> are required. A unit can only be saved once its deposit is paid.</p>
 </section>
 
@@ -62,23 +31,7 @@
 
   <section class="kj-card form-section">
     <h2>Vehicle details</h2>
-    <div class="entry-grid">
-      {{ text_input("make", "Make", required=True, maxlength=80, placeholder="e.g. Toyota") }}
-      {{ text_input("model", "Model", required=True, maxlength=100, placeholder="e.g. Hilux") }}
-      {{ text_input("year", "Year", required=True, type="number", inputmode="numeric", placeholder="e.g. 2021") }}
-      {{ select_input("category", "Category", categories, default="car") }}
-      {{ text_input("color", "Colour", maxlength=50, placeholder="e.g. Wine Red") }}
-      {{ text_input("mileage_km", "Mileage (km)", type="number", inputmode="numeric", placeholder="e.g. 42000") }}
-      {{ text_input("engine_cc", "Engine size (cc)", required=True, type="number", inputmode="numeric", placeholder="e.g. 2800") }}
-      {{ select_input("origin_country", "Country of origin", countries, blank="Choose a country") }}
-    </div>
-    <div class="form-field" data-field="features">
-      <label for="features">Features</label>
-      <textarea class="kj-input{% if errors.get('features') %} field-invalid{% endif %}" id="features" name="features"
-                rows="2" maxlength="1000" placeholder="e.g. Sunroof, Keyless Entry, Alloy Rims">{{ form.get('features', '') }}</textarea>
-      <p class="hint">Separate features with commas.</p>
-      {{ field_error("features") }}
-    </div>
+    {% include "vehicle_specs_fields.html" %}
   </section>
 
   <section class="kj-card form-section">

@@ -1,11 +1,11 @@
 {% extends "base_staff.html" %}
-{% block title %}{{ vehicle.title }} (F-03) | Karmanjahni{% endblock %}
+{% block title %}{{ vehicle.title }} | Karmanjahni{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="/amanda/static/tablet.css">
 {% endblock %}
 
 {% block content %}
-<a class="kj-btn kj-btn-primary back-link" href="/tablet/">&larr; Back to vehicles</a>
+<a class="kj-btn kj-btn-primary back-link" href="{{ '/upcoming-arrivals' if vehicle.shipment_status in ('In Transit', 'Delayed') else '/browse' }}">&larr; Back to vehicles</a>
 
 <section class="kj-card profile-header">
   <div>
@@ -54,6 +54,8 @@
       <div><dt>Make</dt><dd>{{ vehicle.make }}</dd></div>
       <div><dt>Model</dt><dd>{{ vehicle.model }}</dd></div>
       <div><dt>Engine size</dt><dd>{{ vehicle.engine_display }}</dd></div>
+      <div><dt>Transmission</dt><dd>{{ (vehicle.transmission or "Not recorded")|capitalize }}</dd></div>
+      <div><dt>Fuel</dt><dd>{{ (vehicle.fuel_type or "Not recorded")|capitalize }}</dd></div>
       <div><dt>Type</dt><dd>{{ vehicle.category }}</dd></div>
       <div><dt>Imported from</dt><dd>{{ vehicle.origin_country }}</dd></div>
     </dl>
