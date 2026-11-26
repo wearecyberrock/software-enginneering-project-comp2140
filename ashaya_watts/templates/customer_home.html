@@ -1,4 +1,4 @@
-
+```html
 {% extends "base_public.html" %}
 {% block title %}Browse Vehicles | Karmanjahni Company Limited{% endblock %}
 
@@ -31,7 +31,6 @@
   {% if vehicles %}
     {% for vehicle in vehicles %}
       <div class="kj-card">
-
         {% if vehicle.photo_urls %}
           <img src="{{ vehicle.photo_urls[0] }}"
                alt="{{ vehicle.make }} {{ vehicle.model }}"
@@ -47,26 +46,20 @@
         <!-- Display estimated arrival for upcoming vehicles -->
         {% if vehicle.availability == "Upcoming Arrival" %}
           {% if vehicle.estimated_arrival %}
-            <p><strong>Estimated Arrival:</strong>
-              {{ vehicle.estimated_arrival }}
-            </p>
+            <p><strong>Estimated Arrival:</strong> {{ vehicle.estimated_arrival }}</p>
           {% else %}
             <p>Estimated arrival date is not yet available.</p>
           {% endif %}
         {% endif %}
 
         <!-- F-05 estimated JMD price integration pending -->
-
         <a class="kj-btn kj-btn-gold"
            href="{{ url_for('ashaya_bp.customer_vehicle_detail', vehicle_id=vehicle.id) }}">
           View Details
         </a>
-
       </div>
     {% endfor %}
-
   {% else %}
-
     <!-- Handle searches with no matching vehicles -->
     {% if message %}
       <p>{{ message }}</p>
@@ -75,12 +68,9 @@
     {% else %}
       <p>No vehicles are currently available in the inventory.</p>
     {% endif %}
-
   {% endif %}
-
 </section>
 {% endblock %}
+```
 
-{% block extra_js %}
-<script src="/ashaya/static/search.js"></script>
-{% endblock %}
+
