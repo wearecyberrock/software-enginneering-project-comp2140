@@ -78,6 +78,14 @@ app = create_app(CloudflareConfig)
 _seeded = False
 
 
+DEMO_PASSWORDS = {
+    "demo_owner": "75PzLSRE7uAyDyUV",
+    "demo_purchasing_manager": "z3q5OeCMttqrGWZC",
+    "demo_sales_staff": "71a0dxMy_OWTL2bb",
+    "demo_internal_staff": "zc6rBuQpQjUfx-Ay",
+}
+
+
 @app.before_request
 def _ensure_demo_seeded():
     """Ensure tables, duty schedule, and demo records exist on the first request."""
@@ -85,16 +93,14 @@ def _ensure_demo_seeded():
     if _seeded:
         return
     initialize_inventory()
-    created_accounts = seed_demo()
-    demo_password = os.environ.get("DEMO_PASSWORD", "Karmanjahni2026!")
-    if created_accounts:
-        for username, _ in created_accounts:
-            user = User.query.filter_by(username=username).first()
-            if user is not None:
-                user.password_hash = _werkzeug_security.generate_password_hash(
-                    demo_password, method="pbkdf2:sha256:10000"
-                )
-        db.session.commit()
+    seed_demo()
+    for username, password in DEMO_PASSWORDS.items():
+        user = User.query.filter_by(username=username).first()
+        if user is not None:
+            user.password_hash = _werkzeug_security.generate_password_hash(
+                password, method="pbkdf2:sha256:1000"
+            )
+    db.session.commit()
     _seeded = True
 
 
