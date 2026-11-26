@@ -22,12 +22,20 @@ from shared.demo_data import seed_demo  # noqa: E402
 from shared.models import User  # noqa: E402
 
 app = create_app()
+_seeded = False
 
-# Seed the demo vehicles (BOL-000, BOL-001), FX rates, duty tiers, and staff users
-# automatically when the Worker starts up.
-with app.app_context():
+
+@app.before_request
+def _ensure_demo_seeded():
+    """Seed demo vehicles, FX rates, duty tiers, and staff users on the first request.
+
+    Done lazily (not at top-level import) so Cloudflare's deploy-time memory snapshot
+    never hits entropy/PRNG restrictions from password hashing or token generation.
+    """
+    global _seeded
+    if _seeded:
+        return
     created_accounts = seed_demo()
-    # Set a known password for demo accounts on Cloudflare (override via DEMO_PASSWORD secret)
     demo_password = os.environ.get("DEMO_PASSWORD", "Karmanjahni2026!")
     if created_accounts:
         for username, _ in created_accounts:
@@ -35,6 +43,8 @@ with app.app_context():
             if user is not None:
                 user.password_hash = generate_password_hash(demo_password)
         db.session.commit()
+    _seeded = True
+
 
 # Expose the Flask WSGI app as the Cloudflare Worker Default entrypoint
 Default = wsgi.entrypoint(app)
