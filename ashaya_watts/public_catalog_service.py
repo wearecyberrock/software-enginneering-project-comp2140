@@ -120,3 +120,4 @@ def get_public_vehicle(vehicle_id: int) -> dict | None:
 
     return serialize_public_vehicle(vehicle) if vehicle else None
 
+
