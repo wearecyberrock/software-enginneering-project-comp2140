@@ -31,7 +31,7 @@
 {% extends "base_staff.html" %}
 
 {# Set the browser tab title #}
-{% block title %}Update Shipment Status &amp; ETA (F-06) | Karmanjahni{% endblock %}
+{% block title %}Update Shipment Status &amp; ETA | Karmanjahni{% endblock %}
 
 {# Load Shakir's stylesheet #}
 {% block extra_css %}
@@ -44,7 +44,7 @@
 <section class="kj-card">
   <div class="shakir-header-row">
     <div>
-      <h1>Shipment Status &amp; ETA Updating (F-06)</h1>
+      <h1>Shipment Status &amp; ETA Updating</h1>
       <p class="shakir-muted">
         Update transit statuses and estimated arrival dates when notified by overseas suppliers.
       </p>
@@ -64,7 +64,8 @@
   </div>
 
   <!-- Show green confirmation banner when a shipment was updated or soft-deleted -->
-  {% if success_message %}
+  {% for message in get_flashed_messages(category_filter=["shipments"]) %}<p role="status" class="shakir-alert shakir-alert-success">{{ message }}</p>{% endfor %}
+{% if success_message %}
   <div class="shakir-alert shakir-alert-success" role="status">
     {{ success_message }}
   </div>
@@ -87,7 +88,7 @@
         type="text"
         class="kj-input"
         value="{{ search_bol or '' }}"
-        placeholder="e.g. KJ-BOL-2026-001 or BOL-000"
+        placeholder="BOL-000"
         required
       >
     </div>
@@ -208,6 +209,14 @@
     </form>
   </div>
 </section>
+<section class="kj-card" id="manage-vehicle">
+  <h2>Manage Vehicle</h2>
+  <p>{{ selected_shipment.vehicle.year }} {{ selected_shipment.vehicle.make }} {{ selected_shipment.vehicle.model }} · {{ selected_shipment.bill_of_lading }}</p>
+  <form method="post" action="{{ url_for('shakir_bp.edit_vehicle_specs', bol=selected_shipment.bill_of_lading) }}">
+    {% include "vehicle_specs_fields.html" %}
+    <button type="submit" class="kj-btn kj-btn-primary">Save Vehicle Specifications</button>
+  </form>
+</section>
 {% endif %}
 
 <!-- Step 3: Table of all active shipments so staff can quickly pick one to edit -->
@@ -263,6 +272,19 @@
   <p class="shakir-muted">No active shipments found in the database yet.</p>
   {% endif %}
 </section>
+<details class="kj-card" id="archived-shipments">
+  <summary>Archived Shipments ({{ archived|length }})</summary>
+  {% if archived %}
+  <div class="shakir-table-wrap"><table class="shakir-table">
+    <thead><tr><th>Bill of Lading</th><th>Vehicle</th><th>Shipment status</th><th>Action</th></tr></thead>
+    <tbody>{% for item in archived %}
+    <tr><td>{{ item.bill_of_lading }}</td><td>{{ item.vehicle.year }} {{ item.vehicle.make }} {{ item.vehicle.model }}</td>
+    <td>{{ item.status }}</td><td><form method="post" action="{{ url_for('shakir_bp.unarchive', bol=item.bill_of_lading) }}">
+    <button type="submit" class="kj-btn kj-btn-gold">Unarchive</button></form></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p>No archived shipments.</p>{% endif %}
+</details>
 {% endblock %}
 
 {# Load Shakir's JavaScript file inside the `extra_js` block from base_staff.html #}

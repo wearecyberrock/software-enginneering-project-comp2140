@@ -237,6 +237,22 @@ def soft_delete_shipment(bill_of_lading: str):
     return shipment
 
 
+def archived_shipments():
+    return Shipment.query.join(Shipment.vehicle).filter(
+        Shipment.is_deleted.is_(True), Vehicle.is_deleted.is_(False)
+    ).order_by(Shipment.deleted_at.desc(), Shipment.id.desc())
+
+
+def restore_shipment(bol):
+    shipment = archived_shipments().filter(Shipment.bill_of_lading == bol).first()
+    if shipment is None:
+        raise LookupError("Archived shipment not found.")
+    shipment.is_deleted = False
+    shipment.deleted_at = None
+    db.session.commit()
+    return shipment
+
+
 def authenticate_staff(username: str, password: str):
     """
     SRS §3.2 Security Requirement (Staff Authentication):

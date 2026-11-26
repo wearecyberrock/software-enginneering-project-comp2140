@@ -8,7 +8,7 @@ from flask.cli import with_appcontext
 from werkzeug.security import generate_password_hash
 
 from shared.database import db
-from shared.models import DutyTier, FxRate, Shipment, User, Vehicle
+from shared.models import FxRate, Shipment, User, Vehicle
 
 
 def seed_demo():
@@ -25,26 +25,14 @@ def seed_demo():
         if db.session.get(FxRate, code) is None:
             db.session.add(FxRate(currency_code=code, rate_to_jmd=rate))
 
-    # These are classroom examples from the test plan, not official duty rates.
-    for category, bands in {
-        "car": [(0, 1500, 20), (1501, 2000, 25), (2001, None, 30)],
-        "truck": [(0, None, 30)], "heavy_equipment": [(0, None, 30)],
-        "bus": [(0, None, 30)], "parts": [(0, None, 20)],
-    }.items():
-        if DutyTier.query.filter_by(vehicle_category=category).first():
-            continue
-        for low, high, percent in bands:
-            db.session.add(DutyTier(label=f"Demo {category} {low}–{high or 'up'} cc",
-                                    vehicle_category=category, min_cc=low, max_cc=high,
-                                    duty_percentage=percent))
-
-    for bol, model, status, eta in (
-        ("BOL-000", "Fit", "In Transit", date(2026, 11, 23)),
-        ("BOL-001", "Civic", "Delayed", date(2026, 12, 1)),
+    for bol, make, model, status, eta in (
+        ("BOL-000", "Honda", "Fit", "In Transit", date(2026, 11, 23)),
+        ("BOL-001", "Honda", "Civic", "Delayed", date(2026, 12, 1)),
+        ("BOL-002", "Toyota", "Corolla", "Arrived", None),
     ):
         if Shipment.query.filter_by(bill_of_lading=bol).first() is None:
-            vehicle = Vehicle(make="Honda", model=model, year=2021, engine_cc=1500,
-                              base_foreign_price=10000, base_currency="USD", deposit_paid=True)
+            vehicle = Vehicle(make=make, model=model, year=2021, engine_cc=1500,
+                              fuel_type="petrol", transmission="automatic", base_foreign_price=10000, base_currency="USD", deposit_paid=True)
             vehicle.shipment = Shipment(bill_of_lading=bol, status=status, eta_date=eta)
             db.session.add(vehicle)
     db.session.commit()

@@ -77,6 +77,8 @@ def build_vehicle_view(vehicle, estimated_price_jmd=None):
         "make": vehicle.make,
         "model": vehicle.model,
         "year": vehicle.year,
+        "fuel_type": getattr(vehicle, "fuel_type", None),
+        "transmission": getattr(vehicle, "transmission", None),
         "category": format_category(vehicle.category),
         "color": vehicle.color or NOT_RECORDED,
         "mileage_km": vehicle.mileage_km,

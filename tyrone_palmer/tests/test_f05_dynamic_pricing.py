@@ -43,24 +43,25 @@ def app():
                 id=1,
                 label="Small Engine Car",
                 vehicle_category="car",
-                min_cc=0,
-                max_cc=1500,
-                duty_percentage=Decimal("45.00")
+                lower_bound=0,
+                upper_bound=1500,
+                petrol_rate=45, diesel_rate=30
             ),
 
             DutyTier(
                 id=2,
                 label="Heavy Equipment",
                 vehicle_category="heavy_equipment",
-                min_cc=0,
-                max_cc=None,
-                duty_percentage=Decimal("25.00")
+                lower_bound=0,
+                upper_bound=None,
+                petrol_rate=25, diesel_rate=20
             ),
 
             Vehicle(
                 id=1,
                 make="Honda",
                 model="Fit",
+                fuel_type="petrol",
                 year=2020,
                 category="car",
                 engine_cc=1500,
@@ -74,6 +75,7 @@ def app():
                 id=2,
                 make="Kubota",
                 model="Tractor",
+                fuel_type="petrol",
                 year=2019,
                 category="heavy_equipment",
                 engine_cc=3331,
@@ -133,7 +135,7 @@ def test_duty_percentage_update(app):
 
     vehicle = db.session.get(Vehicle, 1)
 
-    update_duty_tier(1, "50.00")
+    update_duty_tier(1, "50.00", "35")
 
     estimated_price = calculate_estimated_jmd_price(vehicle)
 
@@ -154,7 +156,7 @@ def test_invalid_duty_percentage(app):
     """Reject negative duty percentages."""
 
     with pytest.raises(ValueError):
-        update_duty_tier(1, "-5")
+        update_duty_tier(1, "-5", "35")
 
 
 def test_missing_exchange_rate(app):

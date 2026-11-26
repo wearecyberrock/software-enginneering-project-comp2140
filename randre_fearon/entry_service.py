@@ -20,8 +20,9 @@ from shared.validators import is_valid_bill_of_lading
 DEPOSIT_REQUIRED_MESSAGE = "Deposit confirmation required"
 
 CATEGORY_CHOICES = [
-    ("car", "Car"),
-    ("truck", "Truck / Pickup"),
+    ("car", "Car / SUV"),
+    ("pickup", "Pickup"),
+    ("truck", "Truck"),
     ("bus", "Bus"),
     ("heavy_equipment", "Heavy equipment"),
     ("parts", "Parts"),
@@ -114,13 +115,8 @@ def _to_photo_list(value) -> list:
 # Step 1: validate
 # ---------------------------------------------------------------------------
 
-def validate_vehicle_form(form_data: dict) -> dict:
-    """Check every field of the Add Unit form (F-02 SR-1, SR-2).
-
-    Returns a cleaned dict ready for save_vehicle_record(). If anything is wrong it raises
-    EntryValidationError listing ALL the problems at once, so the page can highlight every
-    bad field in a single go (TC-02.02) and the deposit rule is never skipped (TC-02.04).
-    """
+def validate_vehicle_specs(form_data):
+    """Validate editable specifications for both new and existing vehicles."""
     errors = {}
     cleaned = {}
 
@@ -147,6 +143,17 @@ def validate_vehicle_form(form_data: dict) -> dict:
     if category not in VALID_CATEGORIES:
         errors["category"] = "Choose a category from the list"
     cleaned["category"] = category
+    for field, choices in (("fuel_type", ("petrol", "diesel")), ("transmission", ("manual", "automatic"))):
+        value = form_data.get(field)
+        if category != "parts" and value not in choices:
+            errors[field] = "Select " + " or ".join(choices)
+        cleaned[field] = value if value in choices else None
+    weight = None
+    if category in ("pickup", "truck"):
+        weight = _to_int(form_data.get("weight_kg"))
+        if weight is None or not 1 <= weight <= 2147483647:
+            errors["weight_kg"] = "Enter the vehicle weight in whole, positive kilograms"
+    cleaned["weight_kg"] = weight
 
     # --- Optional text: colour, origin country, features -------------------
     for field, label, limit in (
@@ -174,6 +181,18 @@ def validate_vehicle_form(form_data: dict) -> dict:
     elif engine_cc is None or not 1 <= engine_cc <= 100_000:
         errors["engine_cc"] = "Engine size must be a whole number of cc, such as 2800"
     cleaned["engine_cc"] = engine_cc
+
+    return cleaned, errors
+
+
+def validate_vehicle_form(form_data: dict) -> dict:
+    """Check every field of the Add Unit form (F-02 SR-1, SR-2).
+
+    Returns a cleaned dict ready for save_vehicle_record(). If anything is wrong it raises
+    EntryValidationError listing ALL the problems at once, so the page can highlight every
+    bad field in a single go (TC-02.02) and the deposit rule is never skipped (TC-02.04).
+    """
+    cleaned, errors = validate_vehicle_specs(form_data)
 
     # --- Required: purchase details (base foreign price + currency) ------------
     price_text = _text(form_data.get("base_foreign_price"))
@@ -242,6 +261,7 @@ def save_vehicle_record(cleaned: dict) -> Vehicle:
         model=cleaned["model"],
         year=cleaned["year"],
         category=cleaned["category"],
+        transmission=cleaned["transmission"], fuel_type=cleaned["fuel_type"], weight_kg=cleaned["weight_kg"],
         color=cleaned["color"],
         mileage_km=cleaned["mileage_km"],
         engine_cc=cleaned["engine_cc"],

@@ -169,6 +169,18 @@
     if (event.target.id && event.target !== photoInput) { clearError(event.target.id); }
   });
 
+  const category = form.elements.category;
+  const weight = form.elements.weight_kg;
+  function updateWeightField() {
+    const needed = category.value === "pickup" || category.value === "truck";
+    weight.closest(".form-field").hidden = !needed;
+    weight.disabled = !needed;
+    weight.closest(".form-field").querySelector("label").textContent =
+      category.value === "pickup" ? "Unladen weight (kg) *" : "Truck weight (kg) *";
+  }
+  category.addEventListener("change", updateWeightField);
+  updateWeightField();
+
   // ---- Photo preview -------------------------------------------------------------
   photoInput.addEventListener("change", function () {
     previewUrls.forEach(function (url) { URL.revokeObjectURL(url); });

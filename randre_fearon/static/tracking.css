@@ -97,7 +97,9 @@ textarea.kj-input { min-height: var(--kj-touch-min); resize: vertical; }
 .photo-previews img {
   width: 96px;
   height: 72px;
-  object-fit: cover;
+  max-width: 100%;
+  object-fit: contain;
+  background: var(--kj-bg);
   border-radius: var(--kj-radius-btn);
   border: 1px solid var(--kj-border);
 }

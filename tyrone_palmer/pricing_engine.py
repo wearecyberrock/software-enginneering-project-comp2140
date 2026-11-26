@@ -30,26 +30,23 @@ def calculate_estimated_jmd_price(vehicle: Vehicle) -> Decimal:
     if rate <= 0:
         raise ValueError("Exchange rate must be positive.")
 
-    # Find the duty tier matching vehicle category and engine CC.
-    duty_tiers = DutyTier.query.filter(
-        DutyTier.vehicle_category == vehicle.category,
-        DutyTier.min_cc <= vehicle.engine_cc,
-        or_(
-            DutyTier.max_cc.is_(None),
-            DutyTier.max_cc >= vehicle.engine_cc
-        )
+    if vehicle.fuel_type not in ("petrol", "diesel"):
+        raise ValueError("Fuel type is needed for a duty estimate.")
+    if vehicle.category == "car":
+        size = vehicle.engine_cc
+    elif vehicle.category in ("truck", "pickup"):
+        size = vehicle.weight_kg
+        if not size:
+            raise ValueError("Vehicle weight is needed for a duty estimate.")
+    else:
+        size = 0
+    tiers = DutyTier.query.filter(
+        DutyTier.vehicle_category == vehicle.category, DutyTier.lower_bound <= size,
+        or_(DutyTier.upper_bound.is_(None), DutyTier.upper_bound >= size),
     ).all()
-
-    if not duty_tiers:
-        raise ValueError("No matching duty tier found.")
-
-    if len(duty_tiers) > 1:
-        raise ValueError("Overlapping duty tiers found.")
-
-    duty_percentage = Decimal(
-        str(duty_tiers[0].duty_percentage)
-    )
-
+    if len(tiers) != 1:
+        raise ValueError("No unique duty bracket for this vehicle.")
+    duty_percentage = tiers[0].petrol_rate if vehicle.fuel_type == "petrol" else tiers[0].diesel_rate
     if duty_percentage < 0:
         raise ValueError("Duty percentage cannot be negative.")
 

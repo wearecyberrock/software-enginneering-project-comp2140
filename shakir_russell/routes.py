@@ -36,10 +36,12 @@ What this file pulls from the shared/group code:
 """
 
 # Import Flask tools needed to handle HTTP requests, sessions, templates, and redirects
-from flask import current_app, redirect, render_template, request, session, url_for
+from flask import abort, flash, current_app, redirect, render_template, request, session, url_for
 
 # Pull the shared Role-Based Access Control (RBAC) decorator from shared/auth.py (SRS §3.2)
 from shared.auth import role_required
+from shared.database import db
+from randre_fearon.entry_service import CATEGORY_CHOICES, ORIGIN_COUNTRIES, validate_vehicle_specs
 
 # Pull our Blueprint object from shakir_russell/__init__.py
 from shakir_russell import shakir_bp
@@ -48,12 +50,63 @@ from shakir_russell import shakir_bp
 from shakir_russell.status_update_service import (
     STATUS_BADGE_CLASSES,
     STATUS_CHOICES,
+    archived_shipments,
+    restore_shipment,
     authenticate_staff,
     find_active_shipment,
     get_all_active_shipments,
     soft_delete_shipment,
     update_shipment_status,
 )
+
+
+SPEC_FIELDS = ("make", "model", "year", "category", "fuel_type", "transmission", "weight_kg",
+               "color", "origin_country", "features", "mileage_km", "engine_cc")
+
+
+def render_manage_page(selected_shipment=None, spec_form=None, errors=None, **context):
+    if selected_shipment and spec_form is None:
+        vehicle = selected_shipment.vehicle
+        spec_form = {key: getattr(vehicle, key) for key in SPEC_FIELDS}
+        spec_form = {key: value if value is not None else "" for key, value in spec_form.items()}
+    countries = list(ORIGIN_COUNTRIES)
+    origin = (spec_form or {}).get("origin_country")
+    if origin and origin not in countries:
+        countries.append(origin)
+    return render_template("update_shipment.html", selected_shipment=selected_shipment,
+                           archived=archived_shipments().all(), form=spec_form or {},
+                           errors=errors or {}, categories=CATEGORY_CHOICES,
+                           countries=[(country, country) for country in countries], **context)
+
+
+@shakir_bp.post("/shipments/<bol>/vehicle")
+@role_required("purchasing_manager", "internal_staff")
+def edit_vehicle_specs(bol):
+    shipment = find_active_shipment(bol)
+    if shipment is None:
+        abort(404)
+    cleaned, errors = validate_vehicle_specs(request.form)
+    if errors:
+        return render_manage_page(selected_shipment=shipment, spec_form=request.form,
+                                  errors=errors, search_bol=bol, shipments=get_all_active_shipments(),
+                                  status_choices=STATUS_CHOICES, badge_classes=STATUS_BADGE_CLASSES,
+                                  error_message="Vehicle specifications could not be saved."), 400
+    for key in SPEC_FIELDS:
+        setattr(shipment.vehicle, key, cleaned[key])
+    db.session.commit()
+    flash("Vehicle specifications updated.", "shipments")
+    return redirect(url_for("shakir_bp.manage_shipments", bol=bol, _anchor="manage-vehicle"))
+
+
+@shakir_bp.post("/shipments/<bol>/restore")
+@role_required("purchasing_manager", "internal_staff")
+def unarchive(bol):
+    try:
+        shipment = restore_shipment(bol)
+    except LookupError:
+        abort(404)
+    flash(f"Shipment {shipment.bill_of_lading} returned to inventory.", "shipments")
+    return redirect(url_for("shakir_bp.manage_shipments", bol=shipment.bill_of_lading))
 
 
 @shakir_bp.route("/shipments/manage", methods=["GET", "POST"])
@@ -115,8 +168,7 @@ def manage_shipments():
             error_message = str(exc)
             all_shipments = get_all_active_shipments()
             return (
-                render_template(
-                    "update_shipment.html",
+                render_manage_page(
                     search_bol=search_bol,
                     selected_shipment=None,
                     shipments=all_shipments,
@@ -133,8 +185,7 @@ def manage_shipments():
             selected_shipment = find_active_shipment(form_bol)
             all_shipments = get_all_active_shipments()
             return (
-                render_template(
-                    "update_shipment.html",
+                render_manage_page(
                     search_bol=search_bol,
                     selected_shipment=selected_shipment,
                     shipments=all_shipments,
@@ -173,8 +224,7 @@ def manage_shipments():
     all_shipments = get_all_active_shipments()
 
     # Render templates/update_shipment.html with all data needed by the page
-    return render_template(
-        "update_shipment.html",
+    return render_manage_page(
         search_bol=search_bol,
         selected_shipment=selected_shipment,
         shipments=all_shipments,
@@ -210,8 +260,7 @@ def update_shipment_by_bol(bol):
     except LookupError as exc:
         # Return HTTP 404 if the BoL does not exist
         return (
-            render_template(
-                "update_shipment.html",
+            render_manage_page(
                 search_bol=bol,
                 selected_shipment=None,
                 shipments=get_all_active_shipments(),
@@ -225,8 +274,7 @@ def update_shipment_by_bol(bol):
     except ValueError as exc:
         # Return HTTP 400 if status or date was invalid
         return (
-            render_template(
-                "update_shipment.html",
+            render_manage_page(
                 search_bol=bol,
                 selected_shipment=find_active_shipment(bol),
                 shipments=get_all_active_shipments(),
@@ -258,8 +306,7 @@ def delete_shipment_by_bol(bol):
     except LookupError as exc:
         # Return HTTP 404 if the shipment could not be found
         return (
-            render_template(
-                "update_shipment.html",
+            render_manage_page(
                 search_bol=bol,
                 selected_shipment=None,
                 shipments=get_all_active_shipments(),
@@ -282,7 +329,7 @@ def delete_shipment_by_bol(bol):
 
 def staff_home():
     if session.get("user_role") == "sales_staff":
-        return redirect("/tablet/")
+        return redirect("/browse")
     return redirect(url_for("shakir_bp.manage_shipments"))
 
 

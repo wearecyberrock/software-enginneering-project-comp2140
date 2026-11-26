@@ -32,7 +32,7 @@ PNG = base64.b64decode(
 def valid_form(**overrides):
     """The Hilux from the Test Plan (TC-02.01). Pass a value of None to leave a field out."""
     form = dict(
-        make="Toyota", model="Hilux", year="2021", category="truck", engine_cc="2800",
+        make="Toyota", model="Hilux", year="2021", category="pickup", engine_cc="2800", fuel_type="diesel", transmission="automatic", weight_kg="2000",
         base_foreign_price="18500", base_currency="USD", bill_of_lading="BOL-205",
         deposit_paid="on",
     )
@@ -178,7 +178,7 @@ def test_service_collects_every_problem_at_once(flask_app):
         with pytest.raises(EntryValidationError) as excinfo:
             log_new_vehicle({"deposit_paid": ""})
         assert set(excinfo.value.errors) == {
-            "make", "model", "year", "engine_cc", "base_foreign_price", "bill_of_lading", "deposit_paid",
+            "make", "model", "year", "engine_cc", "base_foreign_price", "bill_of_lading", "deposit_paid", "fuel_type", "transmission",
         }
 
 

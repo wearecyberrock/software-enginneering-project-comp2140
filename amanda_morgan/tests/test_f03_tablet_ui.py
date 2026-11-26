@@ -127,14 +127,12 @@ def test_template_profile_escapes_html_in_vehicle_data(template_app):
     assert "<script>alert(1)</script>" not in html
 
 
-def test_template_dashboard_lists_vehicles_and_empty_state(template_app):
-    cards = [build_vehicle_view(make_vehicle(id=7))]
-    with template_app.test_request_context():
-        html = render_template("tablet_dashboard.html", vehicles=cards, query="")
-        empty = render_template("tablet_dashboard.html", vehicles=[], query="zzz")
-    assert 'class="tablet-grid"' in html
-    assert "/tablet/vehicle/7" in html
-    assert "No vehicles match your search." in empty
+def test_old_tablet_link_opens_shared_inventory(app_and_ids):
+    client, _ = app_and_ids
+    response = client.get("/tablet/?q=Toyota", follow_redirects=True)
+    assert response.request.path == "/browse"
+    assert response.request.args["q"] == "Toyota"
+    assert b"Sales Tablet Lot View" not in response.data
 
 
 def test_css_targets_tablet_range_and_touch_size():
@@ -183,6 +181,7 @@ def app_and_ids():
         db.session.add_all([corolla, isuzu, deleted, unpaid])
         db.session.commit()
 
+        db.session.add(Shipment(vehicle_id=isuzu.id, bill_of_lading="BOL-111", status="Arrived"))
         db.session.add(
             Shipment(vehicle_id=corolla.id, bill_of_lading="BOL-000", status="Delayed", eta_date=date(2026, 12, 1))
         )
@@ -203,10 +202,10 @@ def app_and_ids():
 def test_ts1_tablet_responsive_markup(app_and_ids):
     """TS-1 [AC-1]: the tablet page is responsive, touch-oriented markup (viewport + tablet CSS + grid)."""
     client, ids = app_and_ids
-    html = client.get("/tablet/").get_data(as_text=True)
+    html = client.get("/upcoming-arrivals").get_data(as_text=True)
     assert 'name="viewport"' in html
-    assert "/amanda/static/tablet.css" in html
-    assert 'class="tablet-grid"' in html
+    assert "/ashaya/static/storefront.css" in html
+    assert 'id="vehicle-results"' in html
     assert f"/tablet/vehicle/{ids['corolla']}" in html
     assert "Search" in html
 
@@ -243,8 +242,9 @@ def test_unknown_vehicle_returns_404(app_and_ids):
 
 def test_soft_deleted_and_unpaid_vehicles_are_hidden(app_and_ids):
     client, ids = app_and_ids
-    listing = client.get("/tablet/").get_data(as_text=True)
-    assert "Corolla" in listing and "Isuzu" in listing
+    listing = client.get("/upcoming-arrivals").get_data(as_text=True)
+    assert "Corolla" in listing and "Isuzu" not in listing
+    assert b"Isuzu" in client.get("/browse").data
     assert "Civic" not in listing  # soft-deleted (SRS 3.2)
     assert "Note" not in listing   # deposit not paid (F-02 gate)
     assert client.get(f"/tablet/vehicle/{ids['deleted']}").status_code == 404
@@ -253,16 +253,16 @@ def test_soft_deleted_and_unpaid_vehicles_are_hidden(app_and_ids):
 
 def test_search_filters_the_grid(app_and_ids):
     client, _ = app_and_ids
-    html = client.get("/tablet/?q=corolla").get_data(as_text=True)
+    html = client.get("/upcoming-arrivals?q=corolla").get_data(as_text=True)
     assert "Corolla" in html and "Isuzu" not in html
-    html = client.get("/tablet/?q=toyota 2018").get_data(as_text=True)
+    html = client.get("/upcoming-arrivals?q=toyota corolla").get_data(as_text=True)
     assert "Corolla" in html
-    html = client.get("/tablet/?q=zzzzz").get_data(as_text=True)
-    assert "No vehicles match your search." in html
+    html = client.get("/upcoming-arrivals?q=zzzzz").get_data(as_text=True)
+    assert "No matching vehicles found" in html
 
 
 def test_search_input_is_sanitized(app_and_ids):
     client, _ = app_and_ids
-    response = client.get("/tablet/", query_string={"q": "'; DROP TABLE vehicles; --"})
+    response = client.get("/upcoming-arrivals", query_string={"q": "'; DROP TABLE vehicles; --"})
     assert response.status_code == 200
-    assert "Corolla" in client.get("/tablet/").get_data(as_text=True)  # table still intact
+    assert "Corolla" in client.get("/upcoming-arrivals").get_data(as_text=True)  # table still intact

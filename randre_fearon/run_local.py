@@ -22,6 +22,7 @@ from randre_fearon import randre_bp
 from shakir_russell import shakir_bp
 from shared.config import Config
 from shared.database import db
+from shared.duty_schedule import initialize_inventory
 from shared.models import Vehicle
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -51,7 +52,7 @@ def create_local_app(config_object=Config, load_samples=True):
     db.init_app(app)
 
     with app.app_context():
-        db.create_all()
+        initialize_inventory()
         if load_samples and Vehicle.query.count() == 0:
             load_sample_data()
 

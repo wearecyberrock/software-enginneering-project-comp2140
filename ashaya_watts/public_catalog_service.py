@@ -80,6 +80,8 @@ def serialize_public_vehicle(vehicle: Vehicle) -> dict:
         "color": vehicle.color,
         "mileage_km": vehicle.mileage_km,
         "engine_cc": vehicle.engine_cc,
+        "transmission": vehicle.transmission,
+        "fuel_type": vehicle.fuel_type,
         "features": vehicle.features,
         "photo_urls": parse_photo_urls(vehicle.photo_urls),
         "estimated_jmd_price": price,
@@ -88,7 +90,7 @@ def serialize_public_vehicle(vehicle: Vehicle) -> dict:
     }
 
 
-def search_public_inventory(raw_query: str = "") -> list[dict]:
+def search_public_inventory(raw_query: str = "", section=None, transmission="") -> list[dict]:
     """Filter public inventory by make and model."""
     load_demo_inventory()
     clean_q = sanitize_search_query(raw_query)
@@ -96,10 +98,13 @@ def search_public_inventory(raw_query: str = "") -> list[dict]:
     if raw_query.strip() and not clean_q:
         return []
 
-    q = Vehicle.query.filter_by(
-        is_deleted=False,
-        deposit_paid=True,
-    )
+    q = Vehicle.active_inventory()
+
+    if transmission:
+        q = q.filter_by(transmission=transmission)
+    if section:
+        statuses = ("In Transit", "Delayed") if section == "upcoming" else ("Arrived", "Cleared")
+        q = q.join(Vehicle.shipment).filter(Shipment.is_deleted.is_(False), Shipment.status.in_(statuses))
 
     if clean_q:
         for term in clean_q.split():
@@ -117,11 +122,7 @@ def search_public_inventory(raw_query: str = "") -> list[dict]:
 
 def get_public_vehicle(vehicle_id: int) -> dict | None:
     """Retrieve public details for a single vehicle."""
-    vehicle = Vehicle.query.filter_by(
-        id=vehicle_id,
-        is_deleted=False,
-        deposit_paid=True,
-    ).first()
+    vehicle = Vehicle.active_inventory().filter_by(id=vehicle_id).first()
 
     return serialize_public_vehicle(vehicle) if vehicle else None
 

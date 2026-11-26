@@ -10,7 +10,7 @@ def get_all_fx_rates():
 
 
 def get_all_duty_tiers():
-    return DutyTier.query.order_by(DutyTier.vehicle_category, DutyTier.min_cc).all()
+    return DutyTier.query.order_by(DutyTier.id).all()
 
 
 def _rate_value(raw, minimum, maximum, places):
@@ -33,9 +33,11 @@ def update_fx_rate(currency_code, new_rate):
     db.session.commit()
 
 
-def update_duty_tier(tier_id, new_percentage):
+def update_duty_tier(tier_id, petrol, diesel):
     tier = db.session.get(DutyTier, tier_id)
     if tier is None:
         raise ValueError("Unknown duty tier.")
-    tier.duty_percentage = _rate_value(new_percentage, 0, Decimal("9999.99"), 2)
+    petrol_rate = _rate_value(petrol, 0, Decimal("9999.99"), 2)
+    diesel_rate = _rate_value(diesel, 0, Decimal("9999.99"), 2)
+    tier.petrol_rate, tier.diesel_rate = petrol_rate, diesel_rate
     db.session.commit()

@@ -54,21 +54,38 @@ python -m venv venv
 Open http://127.0.0.1:5000/ for the public storefront. Choose **Staff Login**
 and use the username and password printed by the setup command. Save the
 passwords when they appear. Repeating setup preserves existing accounts,
-rates, units and shipment updates. Demo rates are illustrative.
+rates, units and shipment updates. Demo exchange rates are illustrative.
 
 | Account | Pages to demonstrate |
 | --- | --- |
 | demo_owner | All staff pages and pricing settings |
 | demo_purchasing_manager | Vehicle entry, tracking, shipment updates and rates |
 | demo_internal_staff | Tracking and shipment updates |
-| demo_sales_staff | Tablet inventory, photos, mileage and JMD price |
+| demo_sales_staff | Mobile-friendly inventory, photos, mileage and JMD price |
+
+Browse Inventory lists arrived and cleared vehicles. Upcoming Arrivals lists in-transit and delayed vehicles. Sales staff open vehicle details from either page on a phone or tablet. BOL-002 is an arrived Corolla in the demo.
 
 Start with BOL-000 (In Transit) and BOL-001 (Delayed). Log the Hilux as
 BOL-205 with two photos. Update its status and ETA in shipment management,
 view the photos and price as a salesperson, and search for Hilux signed out.
-For the test-plan pricing example, use BOL-000 on a fresh demo database.
-The Honda Fit starts at J$1,800,000.00; change USD from 150 to 160 to see
-J$1,920,000.00 on the tablet and the corresponding estimate in the storefront.
+For the updated recording, enter the USD 18,500 Hilux as a diesel pickup with
+automatic transmission and 2,000 kg unladen weight (demo inputs). Its 52% rate
+gives J$4,218,000 at 150 JMD/USD and J$4,499,200 at 160 JMD/USD.
+The rate editor stores separate petrol and diesel percentages for each bracket.
+Exactly 1,850 kg for a pickup falls between the supplied brackets, so the unit
+can be saved but its estimate is unavailable. Parts also have no supplied rate.
+Special-purpose heavy equipment uses the project-specified 33% rate.
+
+If upgrading an existing project, keep the existing database and uploads. On
+startup, the app adds the vehicle columns and initializes the new duty schedule;
+existing accounts, vehicles, FX rates and previous rate table are retained.
+New specifications for legacy vehicles stay unknown until confirmed. For example,
+to classify an existing BOL-205 after verifying the details:
+
+```powershell
+.\venv\Scripts\python.exe -m flask --app app classify-vehicle BOL-205 --category pickup --fuel diesel --transmission automatic --weight-kg 2000
+```
+
 The local database persists between runs. Stop the server with Ctrl+C.
 
 To run all tests, including the cross-member workflow:

@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         try {
             const response = await fetch(
-                "/api/public/vehicles?q=" + encodeURIComponent(query),
+                "/api/public/vehicles?" + new URLSearchParams({q: query, section: results.dataset.section, transmission: searchForm.elements.transmission.value}),
                 { signal: controller.signal }
             );
 
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (vehicles.length === 0) {
                 results.textContent = query
                     ? "No matching vehicles found"
-                    : "No vehicles are currently available in the inventory.";
+                    : (results.dataset.section === "upcoming" ? "No upcoming arrivals." : "No vehicles are currently available in the inventory.");
                 return;
             }
 
@@ -74,12 +74,16 @@ document.addEventListener("DOMContentLoaded", function () {
                 const status = document.createElement("p");
                 status.textContent = `Status: ${vehicle.availability}`;
 
+                const transmission = document.createElement("p");
+                const kind = vehicle.transmission;
+                transmission.textContent = "Transmission: " + (kind ? kind[0].toUpperCase() + kind.slice(1) : "Not recorded");
+                card.appendChild(transmission);
                 card.appendChild(color);
                 card.appendChild(mileage);
                 card.appendChild(status);
                 const price = document.createElement("p");
                 price.textContent = vehicle.estimated_jmd_price
-                    ? `Estimated price: J$${vehicle.estimated_jmd_price}`
+                    ? `Estimated price: J$${Number(vehicle.estimated_jmd_price).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
                     : "Estimated price: Unavailable";
                 card.appendChild(price);
 
@@ -95,7 +99,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 const details = document.createElement("a");
-                details.href = `/vehicle/${vehicle.id}`;
+                details.href = results.dataset.detailPrefix + vehicle.id;
                 details.textContent = "View Details";
                 details.className = "kj-btn kj-btn-gold";
 
@@ -118,6 +122,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // Search when the customer clicks the search button.
+    searchForm.elements.transmission.addEventListener("change", searchVehicles);
     searchForm.addEventListener("submit", function (event) {
         event.preventDefault();
         clearTimeout(searchTimer);

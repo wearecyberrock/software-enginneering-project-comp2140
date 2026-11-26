@@ -207,3 +207,14 @@
   color: var(--kj-navy-primary);
   font-weight: 700;
 }
+
+#manage-vehicle .entry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+}
+#manage-vehicle label { display: block; margin-bottom: .25rem; }
+#manage-vehicle textarea { width: 100%; }
+#manage-vehicle .field-error { color: var(--kj-delayed-text); }
+#manage-vehicle .form-field, #archived-shipments summary { margin-block: .5rem; }
+#archived-shipments summary { cursor: pointer; font-weight: 700; }
