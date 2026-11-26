@@ -1,1 +1,243 @@
-/* Styles for F-05 Dynamic Pricing Widget & Rate Manager (Tyrone Palmer) */
+/* F-05 Dynamic Pricing Widget & Rate Manager */
+
+/* ==============================
+   Rate Management Dashboard
+   ============================== */
+
+.pricing-manager {
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.pricing-manager h1 {
+    font-size: 26px;
+    margin-bottom: 12px;
+}
+
+.pricing-manager h2 {
+    font-size: 20px;
+    margin-top: 30px;
+    margin-bottom: 10px;
+}
+
+.pricing-manager p {
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+
+/* ==============================
+   Pricing Tables
+   ============================== */
+
+.pricing-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    margin-bottom: 24px;
+}
+
+.pricing-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.pricing-table th,
+.pricing-table td {
+    padding: 14px 12px;
+    text-align: left;
+    border-bottom: 1px solid #dce1e7;
+    vertical-align: middle;
+}
+
+.pricing-table th {
+    background-color: #20354a;
+    color: #ffffff;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.pricing-table tbody tr:hover {
+    background-color: #f3f6f9;
+}
+
+.pricing-table td {
+    color: #263238;
+}
+
+/* ==============================
+   Update Forms
+   ============================== */
+
+.pricing-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+}
+
+.pricing-form input[type="number"] {
+    width: 125px;
+    padding: 10px;
+    border: 1px solid #b8c2cc;
+    border-radius: 6px;
+    background-color: #ffffff;
+    color: #263238;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.pricing-form input[type="number"]:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+.pricing-button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    background-color: #20354a;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.pricing-button:hover {
+    background-color: #345674;
+}
+
+.pricing-button:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 3px;
+}
+
+/* ==============================
+   Success and Error Messages
+   ============================== */
+
+.pricing-alert {
+    padding: 14px 16px;
+    margin: 16px 0;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.pricing-success {
+    background-color: #e8f5e9;
+    color: #166534;
+    border: 1px solid #86c991;
+}
+
+.pricing-error {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #f5aaaa;
+}
+
+.pricing-note {
+    padding: 14px;
+    margin-top: 20px;
+    background-color: #f1f5f9;
+    border-left: 4px solid #20354a;
+    border-radius: 4px;
+    color: #475569;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* ==============================
+   Vehicle Pricing Component
+   ============================== */
+
+.kj-price-estimate {
+    padding: 18px;
+    margin: 16px 0;
+    background-color: #f8fafc;
+    border: 1px solid #dce1e7;
+    border-radius: 8px;
+    border-left: 4px solid #15803d;
+    box-sizing: border-box;
+}
+
+.pricing-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 8px;
+}
+
+.pricing-amount {
+    font-size: 26px;
+    font-weight: 700;
+    color: #15803d;
+    margin-bottom: 8px;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.pricing-disclaimer {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #64748b;
+}
+
+.pricing-unavailable {
+    color: #b91c1c;
+    font-size: 18px;
+}
+
+/* ==============================
+   Responsive Layout
+   ============================== */
+
+@media screen and (max-width: 768px) {
+
+    .pricing-manager {
+        padding: 16px;
+    }
+
+    .pricing-manager h1 {
+        font-size: 22px;
+    }
+
+    .pricing-manager h2 {
+        font-size: 18px;
+    }
+
+    .pricing-table th,
+    .pricing-table td {
+        padding: 10px;
+    }
+
+    .pricing-form {
+        flex-wrap: wrap;
+    }
+
+    .pricing-form input[type="number"] {
+        width: 110px;
+    }
+
+    .pricing-amount {
+        font-size: 22px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+
+    .pricing-manager {
+        padding: 12px;
+    }
+
+    .kj-price-estimate {
+        padding: 14px;
+    }
+
+    .pricing-amount {
+        font-size: 20px;
+    }
+
+    .pricing-button {
+        padding: 10px 12px;
+    }
+}
