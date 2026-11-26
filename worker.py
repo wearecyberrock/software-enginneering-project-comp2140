@@ -6,18 +6,29 @@ so the full integrated Flask app runs on Cloudflare Workers without changing
 local development (`flask --app app run`) or pytest tests.
 """
 
+import hashlib
 import os
-import traceback
 
 from sqlalchemy.pool import StaticPool
+import werkzeug.security as _werkzeug_security
+
+# Pyodide's WebAssembly Python build does not include hashlib.scrypt, which
+# Werkzeug 3 uses as the default for generate_password_hash(). Fall back to
+# pbkdf2:sha256 (built into Pyodide) when scrypt is unavailable.
+if not hasattr(hashlib, "scrypt"):
+    _orig_generate_password_hash = _werkzeug_security.generate_password_hash
+
+    def _pbkdf2_generate_password_hash(password, method="pbkdf2:sha256", salt_length=16):
+        if method == "scrypt":
+            method = "pbkdf2:sha256"
+        return _orig_generate_password_hash(password, method=method, salt_length=salt_length)
+
+    _werkzeug_security.generate_password_hash = _pbkdf2_generate_password_hash
 
 # Default to in-memory SQLite on Cloudflare Workers so there are zero filesystem
 # permission or /tmp-reset issues between deploy snapshot and runtime requests.
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 os.environ.setdefault("UPLOAD_FOLDER", "/tmp/uploads")
-
-from werkzeug.exceptions import HTTPException  # noqa: E402
-from werkzeug.security import generate_password_hash  # noqa: E402
 
 from app import create_app  # noqa: E402
 from shared.config import Config  # noqa: E402
@@ -54,17 +65,11 @@ def _ensure_demo_seeded():
         for username, _ in created_accounts:
             user = User.query.filter_by(username=username).first()
             if user is not None:
-                user.password_hash = generate_password_hash(demo_password)
+                user.password_hash = _werkzeug_security.generate_password_hash(
+                    demo_password, method="pbkdf2:sha256"
+                )
         db.session.commit()
     _seeded = True
-
-
-@app.errorhandler(Exception)
-def _handle_unexpected_error(err):
-    """Show exact Python traceback on unexpected 500s during Cloudflare setup."""
-    if isinstance(err, HTTPException):
-        return err
-    return f"<pre>{traceback.format_exc()}</pre>", 500
 
 
 # Expose the Flask WSGI app as the Cloudflare Worker Default entrypoint
